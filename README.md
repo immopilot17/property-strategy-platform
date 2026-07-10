@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Property Strategy Platform
 
 Eigenständige KI-gestützte Immobilien-Strategieplattform für Erstkäufer und private Investoren.
@@ -27,3 +28,6 @@ Die Plattform zeigt Nutzern nicht nur, ob eine Immobilie finanzierbar ist, sonde
 - Jede Empfehlung trennt Fakten, Annahmen und Prognosen
 - RLS schützt Nutzerdaten
 - Agenten sind als Services organisiert und später erweiterbar
+=======
+# property-strategy-platform
+>>>>>>> 336c082906cd8360b9bc95f5dfceb3b267c716e8

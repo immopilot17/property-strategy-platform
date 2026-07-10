@@ -1,12 +1,43 @@
 import Link from "next/link";
+import type { Route } from "next";
 
-const cards = [
-  ["Finanzprofil", "Einkommen, Eigenkapital und Fixkosten", "/dashboard/finanzen"],
-  ["Immobilien", "Objekte erfassen und vergleichen", "/dashboard/immobilien"],
-  ["Strategien", "Sicher, ausgewogen, maximal, alternativ", "/dashboard/strategien"],
-  ["Förderungen", "KfW und weitere Programme", "/dashboard/foerderungen"],
-  ["Steuer", "Steuerliche Hinweise und Szenarien", "/dashboard/steuer"],
-  ["Risiken", "Finanzielle und objektspezifische Risiken", "/dashboard/risiken"]
+type DashboardCard = {
+  title: string;
+  text: string;
+  href: Route;
+};
+
+const cards: DashboardCard[] = [
+  {
+    title: "Finanzprofil",
+    text: "Einkommen, Eigenkapital und Fixkosten",
+    href: "/dashboard/finanzen"
+  },
+  {
+    title: "Immobilien",
+    text: "Objekte erfassen und vergleichen",
+    href: "/dashboard/immobilien"
+  },
+  {
+    title: "Strategien",
+    text: "Sicher, ausgewogen, maximal, alternativ",
+    href: "/dashboard/strategien"
+  },
+  {
+    title: "Förderungen",
+    text: "KfW und weitere Programme",
+    href: "/dashboard/foerderungen"
+  },
+  {
+    title: "Steuer",
+    text: "Steuerliche Hinweise und Szenarien",
+    href: "/dashboard/steuer"
+  },
+  {
+    title: "Risiken",
+    text: "Finanzielle und objektspezifische Risiken",
+    href: "/dashboard/risiken"
+  }
 ];
 
 export default function DashboardPage() {
@@ -17,18 +48,30 @@ export default function DashboardPage() {
           <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
             Dashboard
           </p>
-          <h1 className="mt-2 text-4xl font-bold">Deine Immobilienstrategie</h1>
+
+          <h1 className="mt-2 text-4xl font-bold">
+            Deine Immobilienstrategie
+          </h1>
         </div>
-        <Link href="/schnellcheck" className="rounded-xl bg-slate-950 px-5 py-3 text-white">
+
+        <Link
+          href="/schnellcheck"
+          className="rounded-xl bg-slate-950 px-5 py-3 text-white"
+        >
           Neue Analyse
         </Link>
       </div>
 
       <section className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {cards.map(([title, text, href]) => (
-          <Link key={title} href={href} className="rounded-2xl bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-semibold">{title}</h2>
-            <p className="mt-2 text-slate-600">{text}</p>
+        {cards.map((card) => (
+          <Link
+            key={card.title}
+            href={card.href}
+            className="rounded-2xl bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+          >
+            <h2 className="text-xl font-semibold">{card.title}</h2>
+
+            <p className="mt-2 text-slate-600">{card.text}</p>
           </Link>
         ))}
       </section>

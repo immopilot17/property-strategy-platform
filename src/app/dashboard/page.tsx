@@ -1,10 +1,9 @@
-import Link from "next/link";
-import type { Route } from "next";
+﻿import Link from "next/link";
 
 type DashboardCard = {
   title: string;
   text: string;
-  href: Route;
+  href: string;
 };
 
 const cards: DashboardCard[] = [
@@ -43,7 +42,7 @@ const cards: DashboardCard[] = [
 export default function DashboardPage() {
   return (
     <main className="mx-auto max-w-6xl px-6 py-14">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-6">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
             Dashboard
@@ -70,7 +69,6 @@ export default function DashboardPage() {
             className="rounded-2xl bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
           >
             <h2 className="text-xl font-semibold">{card.title}</h2>
-
             <p className="mt-2 text-slate-600">{card.text}</p>
           </Link>
         ))}

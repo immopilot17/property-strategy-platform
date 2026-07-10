@@ -7,6 +7,13 @@
       "static/chunks/main-app-93645cb92bbdf46a.js",
       "static/chunks/app/_not-found/page-cd1726d1b4a7e279.js"
     ],
+    "/api/analysis/quick-check/route": [
+      "static/chunks/webpack-b66260efa61f877a.js",
+      "static/chunks/4bd1b696-4781a963ad327daa.js",
+      "static/chunks/684-fef2c0ec531f76fd.js",
+      "static/chunks/main-app-93645cb92bbdf46a.js",
+      "static/chunks/app/api/analysis/quick-check/route-c8b3536f43ed5910.js"
+    ],
     "/layout": [
       "static/chunks/webpack-b66260efa61f877a.js",
       "static/chunks/4bd1b696-4781a963ad327daa.js",
@@ -14,13 +21,6 @@
       "static/chunks/main-app-93645cb92bbdf46a.js",
       "static/css/38747a68383e813f.css",
       "static/chunks/app/layout-5b082faaed069d95.js"
-    ],
-    "/api/analysis/quick-check/route": [
-      "static/chunks/webpack-b66260efa61f877a.js",
-      "static/chunks/4bd1b696-4781a963ad327daa.js",
-      "static/chunks/684-fef2c0ec531f76fd.js",
-      "static/chunks/main-app-93645cb92bbdf46a.js",
-      "static/chunks/app/api/analysis/quick-check/route-c8b3536f43ed5910.js"
     ],
     "/dashboard/finanzen/page": [
       "static/chunks/webpack-b66260efa61f877a.js",

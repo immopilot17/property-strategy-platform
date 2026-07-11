@@ -4,6 +4,7 @@ type DashboardCard = {
   title: string;
   text: string;
   href: string;
+  status?: string;
 };
 
 const cards: DashboardCard[] = [
@@ -36,6 +37,12 @@ const cards: DashboardCard[] = [
     title: "Risiken",
     text: "Finanzielle und objektspezifische Risiken",
     href: "/dashboard/risiken"
+  },
+  {
+    title: "Systemstatus",
+    text: "Technischer Stand der Analyseplattform",
+    href: "/dashboard/systemstatus",
+    status: "Phase 1 aktiv"
   }
 ];
 
@@ -68,8 +75,21 @@ export default function DashboardPage() {
             href={card.href}
             className="rounded-2xl bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
           >
-            <h2 className="text-xl font-semibold">{card.title}</h2>
-            <p className="mt-2 text-slate-600">{card.text}</p>
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="text-xl font-semibold">
+                {card.title}
+              </h2>
+
+              {card.status ? (
+                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                  {card.status}
+                </span>
+              ) : null}
+            </div>
+
+            <p className="mt-2 text-slate-600">
+              {card.text}
+            </p>
           </Link>
         ))}
       </section>

@@ -19,6 +19,12 @@ const cards: DashboardCard[] = [
     href: "/dashboard/immobilien"
   },
   {
+    title: "Berechnung",
+    text: "Kaufkosten, Finanzierung, Rendite und Tragbarkeit",
+    href: "/dashboard/berechnung",
+    status: "Neu"
+  },
+  {
     title: "Strategien",
     text: "Sicher, ausgewogen, maximal, alternativ",
     href: "/dashboard/strategien"
@@ -42,7 +48,7 @@ const cards: DashboardCard[] = [
     title: "Systemstatus",
     text: "Technischer Stand der Analyseplattform",
     href: "/dashboard/systemstatus",
-    status: "Phase 1 aktiv"
+    status: "Phase 1"
   }
 ];
 

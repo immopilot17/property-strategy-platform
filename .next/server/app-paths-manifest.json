@@ -1,13 +1,14 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
   "/api/analysis/quick-check/route": "app/api/analysis/quick-check/route.js",
-  "/dashboard/foerderungen/page": "app/dashboard/foerderungen/page.js",
+  "/dashboard/berechnung/page": "app/dashboard/berechnung/page.js",
   "/dashboard/finanzen/page": "app/dashboard/finanzen/page.js",
+  "/dashboard/foerderungen/page": "app/dashboard/foerderungen/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
   "/dashboard/immobilien/page": "app/dashboard/immobilien/page.js",
   "/dashboard/risiken/page": "app/dashboard/risiken/page.js",
   "/dashboard/steuer/page": "app/dashboard/steuer/page.js",
   "/dashboard/strategien/page": "app/dashboard/strategien/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
   "/dashboard/systemstatus/page": "app/dashboard/systemstatus/page.js",
   "/page": "app/page.js",
   "/schnellcheck/page": "app/schnellcheck/page.js"

@@ -3,11 +3,9 @@ import { cookies } from "next/headers";
 
 type CookieOptions = {
   domain?: string;
-  encode?: (value: string) => string;
   expires?: Date;
   httpOnly?: boolean;
   maxAge?: number;
-  partitioned?: boolean;
   path?: string;
   priority?: "low" | "medium" | "high";
   sameSite?: boolean | "lax" | "strict" | "none";
@@ -31,17 +29,13 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll();
         },
-
         setAll(cookiesToSet: CookieToSet[]) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
-            });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
           } catch {
-            /*
-             * Das Setzen von Cookies kann in Server Components blockiert sein.
-             * Die Session wird später über Middleware aktualisiert.
-             */
+            // Server Components dürfen Antwort-Cookies nicht immer verändern.
           }
         }
       }

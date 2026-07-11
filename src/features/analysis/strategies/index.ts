@@ -1,1 +1,1 @@
-﻿export * from "./strategy-engine";
+export * from "./strategy-engine";

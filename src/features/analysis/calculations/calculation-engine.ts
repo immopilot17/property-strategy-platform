@@ -1,105 +1,37 @@
-﻿import type {
+import type {
   AffordabilityResult,
   AnalysisInput,
+  CalculationResult,
   FinancingResult,
-  ProfitabilityResult
+  FundingSuggestion,
+  ProfitabilityResult,
+  PurchaseCostBreakdown,
+  TaxEstimate
 } from "../domain";
 
-export type PurchaseCostBreakdown = {
-  purchasePrice: number;
-  realEstateTransferTax: number;
-  notaryAndLandRegistry: number;
-  brokerCommission: number;
-  totalPurchaseCosts: number;
+const roundMoney = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
+const roundPercent = roundMoney;
+const percent = (part: number, total: number) => total > 0 ? (part / total) * 100 : 0;
 
-  renovationCosts: number;
-  modernizationCosts: number;
-  furnishingCosts: number;
-  totalProjectCosts: number;
-
-  totalInvestmentCosts: number;
-};
-
-export type CalculationResult = {
-  purchaseCosts: PurchaseCostBreakdown;
-  financing: FinancingResult;
-  profitability: ProfitabilityResult;
-  affordability: AffordabilityResult;
-};
-
-function roundCurrency(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-function roundPercent(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-function safePercentage(
-  numerator: number,
-  denominator: number
-): number {
-  if (denominator <= 0) {
-    return 0;
-  }
-
-  return (numerator / denominator) * 100;
-}
-
-export function calculatePurchaseCosts(
-  input: AnalysisInput
-): PurchaseCostBreakdown {
+export function calculatePurchaseCosts(input: AnalysisInput): PurchaseCostBreakdown {
   const { property } = input;
-
-  const realEstateTransferTax =
-    property.purchasePrice *
-    (property.realEstateTransferTaxPercent / 100);
-
-  const notaryAndLandRegistry =
-    property.purchasePrice *
-    (property.notaryAndLandRegistryPercent / 100);
-
-  const brokerCommission =
-    property.purchasePrice *
-    (property.brokerCommissionPercent / 100);
-
-  const totalPurchaseCosts =
-    realEstateTransferTax +
-    notaryAndLandRegistry +
-    brokerCommission;
-
-  const totalProjectCosts =
-    property.renovationCosts +
-    property.modernizationCosts +
-    property.furnishingCosts;
-
-  const totalInvestmentCosts =
-    property.purchasePrice +
-    totalPurchaseCosts +
-    totalProjectCosts;
+  const realEstateTransferTax = property.purchasePrice * property.realEstateTransferTaxPercent / 100;
+  const notaryAndLandRegistry = property.purchasePrice * property.notaryAndLandRegistryPercent / 100;
+  const brokerCommission = property.purchasePrice * property.brokerCommissionPercent / 100;
+  const totalPurchaseCosts = realEstateTransferTax + notaryAndLandRegistry + brokerCommission;
+  const totalProjectCosts = property.renovationCosts + property.modernizationCosts + property.furnishingCosts;
 
   return {
-    purchasePrice: roundCurrency(property.purchasePrice),
-    realEstateTransferTax:
-      roundCurrency(realEstateTransferTax),
-    notaryAndLandRegistry:
-      roundCurrency(notaryAndLandRegistry),
-    brokerCommission:
-      roundCurrency(brokerCommission),
-    totalPurchaseCosts:
-      roundCurrency(totalPurchaseCosts),
-
-    renovationCosts:
-      roundCurrency(property.renovationCosts),
-    modernizationCosts:
-      roundCurrency(property.modernizationCosts),
-    furnishingCosts:
-      roundCurrency(property.furnishingCosts),
-    totalProjectCosts:
-      roundCurrency(totalProjectCosts),
-
-    totalInvestmentCosts:
-      roundCurrency(totalInvestmentCosts)
+    purchasePrice: roundMoney(property.purchasePrice),
+    realEstateTransferTax: roundMoney(realEstateTransferTax),
+    notaryAndLandRegistry: roundMoney(notaryAndLandRegistry),
+    brokerCommission: roundMoney(brokerCommission),
+    totalPurchaseCosts: roundMoney(totalPurchaseCosts),
+    renovationCosts: roundMoney(property.renovationCosts),
+    modernizationCosts: roundMoney(property.modernizationCosts),
+    furnishingCosts: roundMoney(property.furnishingCosts),
+    totalProjectCosts: roundMoney(totalProjectCosts),
+    totalInvestmentCosts: roundMoney(property.purchasePrice + totalPurchaseCosts + totalProjectCosts)
   };
 }
 
@@ -108,18 +40,8 @@ export function calculateMonthlyLoanRate(
   annualInterestRatePercent: number,
   initialRepaymentPercent: number
 ): number {
-  if (loanAmount <= 0) {
-    return 0;
-  }
-
-  const annualRatePercent =
-    annualInterestRatePercent +
-    initialRepaymentPercent;
-
-  const annualPayment =
-    loanAmount * (annualRatePercent / 100);
-
-  return roundCurrency(annualPayment / 12);
+  if (loanAmount <= 0) return 0;
+  return roundMoney(loanAmount * ((annualInterestRatePercent + initialRepaymentPercent) / 100) / 12);
 }
 
 export function calculateRemainingDebt(
@@ -128,197 +50,89 @@ export function calculateRemainingDebt(
   monthlyLoanRate: number,
   years: number
 ): number {
-  if (loanAmount <= 0) {
-    return 0;
+  if (loanAmount <= 0) return 0;
+  const months = Math.max(0, years * 12);
+  const monthlyInterest = annualInterestRatePercent / 100 / 12;
+
+  if (monthlyInterest === 0) {
+    return roundMoney(Math.max(0, loanAmount - monthlyLoanRate * months));
   }
 
-  const numberOfMonths = years * 12;
-  const monthlyInterestRate =
-    annualInterestRatePercent / 100 / 12;
-
-  if (monthlyInterestRate === 0) {
-    return roundCurrency(
-      Math.max(
-        0,
-        loanAmount -
-          monthlyLoanRate * numberOfMonths
-      )
-    );
-  }
-
-  const growthFactor =
-    Math.pow(
-      1 + monthlyInterestRate,
-      numberOfMonths
-    );
-
-  const remainingDebt =
-    loanAmount * growthFactor -
-    monthlyLoanRate *
-      ((growthFactor - 1) /
-        monthlyInterestRate);
-
-  return roundCurrency(
-    Math.max(0, remainingDebt)
-  );
+  const factor = Math.pow(1 + monthlyInterest, months);
+  const remaining = loanAmount * factor - monthlyLoanRate * ((factor - 1) / monthlyInterest);
+  return roundMoney(Math.max(0, remaining));
 }
 
 export function calculateFinancing(
   input: AnalysisInput,
-  purchaseCosts: PurchaseCostBreakdown
+  costs: PurchaseCostBreakdown
 ): FinancingResult {
   const { property, financing } = input;
 
-  let financedAmount =
-    property.purchasePrice;
+  const cashPurchaseCosts = financing.includePurchaseCostsInLoan ? 0 : costs.totalPurchaseCosts;
+  const cashProjectCosts = financing.includeRenovationInLoan ? 0 : costs.totalProjectCosts;
+  const cashCostsOutsideLoan = cashPurchaseCosts + cashProjectCosts;
 
-  if (financing.includePurchaseCostsInLoan) {
-    financedAmount +=
-      purchaseCosts.totalPurchaseCosts;
-  }
+  const financedBase =
+    property.purchasePrice +
+    (financing.includePurchaseCostsInLoan ? costs.totalPurchaseCosts : 0) +
+    (financing.includeRenovationInLoan ? costs.totalProjectCosts : 0);
 
-  if (financing.includeRenovationInLoan) {
-    financedAmount +=
-      purchaseCosts.totalProjectCosts;
-  }
+  const equityAppliedToFinancedAmount = Math.max(
+    0,
+    financing.equityForPurchase - cashCostsOutsideLoan
+  );
 
-  const requiredLoanAmount =
-    Math.max(
-      0,
-      financedAmount -
-        financing.equityForPurchase
-    );
+  const requiredLoanAmount = Math.max(0, financedBase - equityAppliedToFinancedAmount);
+  const baseRate = calculateMonthlyLoanRate(
+    requiredLoanAmount,
+    financing.annualInterestRatePercent,
+    financing.initialRepaymentPercent
+  );
+  const monthlyLoanRate = baseRate + financing.additionalMonthlyPayment;
 
-  const baseMonthlyLoanRate =
-    calculateMonthlyLoanRate(
-      requiredLoanAmount,
-      financing.annualInterestRatePercent,
-      financing.initialRepaymentPercent
-    );
-
-  const monthlyLoanRate =
-    baseMonthlyLoanRate +
-    financing.additionalMonthlyPayment;
-
-  const annualLoanRate =
-    monthlyLoanRate * 12;
-
-  const remainingDebtAfterFixedPeriod =
-    calculateRemainingDebt(
+  return {
+    totalPurchaseCosts: costs.totalPurchaseCosts,
+    totalInvestmentCosts: costs.totalInvestmentCosts,
+    cashCostsOutsideLoan: roundMoney(cashCostsOutsideLoan),
+    equityAppliedToFinancedAmount: roundMoney(equityAppliedToFinancedAmount),
+    requiredLoanAmount: roundMoney(requiredLoanAmount),
+    monthlyLoanRate: roundMoney(monthlyLoanRate),
+    annualLoanRate: roundMoney(monthlyLoanRate * 12),
+    remainingDebtAfterFixedPeriod: calculateRemainingDebt(
       requiredLoanAmount,
       financing.annualInterestRatePercent,
       monthlyLoanRate,
       financing.fixedInterestYears
-    );
-
-  const loanToValuePercent =
-    safePercentage(
-      requiredLoanAmount,
-      property.purchasePrice
-    );
-
-  return {
-    totalPurchaseCosts:
-      roundCurrency(
-        purchaseCosts.totalPurchaseCosts
-      ),
-
-    totalInvestmentCosts:
-      roundCurrency(
-        purchaseCosts.totalInvestmentCosts
-      ),
-
-    requiredLoanAmount:
-      roundCurrency(requiredLoanAmount),
-
-    monthlyLoanRate:
-      roundCurrency(monthlyLoanRate),
-
-    annualLoanRate:
-      roundCurrency(annualLoanRate),
-
-    remainingDebtAfterFixedPeriod:
-      roundCurrency(
-        remainingDebtAfterFixedPeriod
-      ),
-
-    loanToValuePercent:
-      roundPercent(loanToValuePercent)
+    ),
+    loanToValuePercent: roundPercent(percent(requiredLoanAmount, property.purchasePrice))
   };
 }
 
 export function calculateProfitability(
   input: AnalysisInput,
-  purchaseCosts: PurchaseCostBreakdown,
+  costs: PurchaseCostBreakdown,
   financing: FinancingResult
 ): ProfitabilityResult {
   const { property } = input;
-
-  const annualColdRent =
-    property.monthlyColdRent * 12;
-
-  const annualVacancyLoss =
-    annualColdRent *
-    (property.expectedVacancyPercent / 100);
-
-  const effectiveAnnualRent =
-    annualColdRent -
-    annualVacancyLoss;
-
-  const annualMaintenanceCosts =
-    property.purchasePrice *
-    (property.annualMaintenancePercent / 100);
-
-  const annualNonRecoverableCosts =
-    property.monthlyNonRecoverableCosts * 12;
-
-  const annualOperatingIncome =
-    effectiveAnnualRent -
-    annualMaintenanceCosts -
-    annualNonRecoverableCosts;
-
-  const grossRentalYieldPercent =
-    safePercentage(
-      annualColdRent,
-      property.purchasePrice
-    );
-
-  const netRentalYieldPercent =
-    safePercentage(
-      annualOperatingIncome,
-      purchaseCosts.totalInvestmentCosts
-    );
-
-  const annualCashflowBeforeTax =
-    annualOperatingIncome -
-    financing.annualLoanRate;
-
-  const monthlyCashflowBeforeTax =
-    annualCashflowBeforeTax / 12;
+  const annualColdRent = property.monthlyColdRent * 12;
+  const vacancyLoss = annualColdRent * property.expectedVacancyPercent / 100;
+  const effectiveAnnualRent = annualColdRent - vacancyLoss;
+  const annualMaintenance = property.purchasePrice * property.annualMaintenancePercent / 100;
+  const annualNonRecoverableCosts = property.monthlyNonRecoverableCosts * 12;
+  const annualOperatingIncome = effectiveAnnualRent - annualMaintenance - annualNonRecoverableCosts;
+  const annualCashflowBeforeTax = annualOperatingIncome - financing.annualLoanRate;
 
   return {
-    annualColdRent:
-      roundCurrency(annualColdRent),
-
-    grossRentalYieldPercent:
-      roundPercent(
-        grossRentalYieldPercent
-      ),
-
-    netRentalYieldPercent:
-      roundPercent(
-        netRentalYieldPercent
-      ),
-
-    monthlyCashflowBeforeTax:
-      roundCurrency(
-        monthlyCashflowBeforeTax
-      ),
-
-    annualCashflowBeforeTax:
-      roundCurrency(
-        annualCashflowBeforeTax
-      )
+    pricePerSquareMeter: roundMoney(property.purchasePrice / property.livingArea),
+    monthlyRentPerSquareMeter: roundMoney(property.monthlyColdRent / property.livingArea),
+    annualColdRent: roundMoney(annualColdRent),
+    effectiveAnnualRent: roundMoney(effectiveAnnualRent),
+    annualOperatingIncome: roundMoney(annualOperatingIncome),
+    grossRentalYieldPercent: roundPercent(percent(annualColdRent, property.purchasePrice)),
+    netRentalYieldPercent: roundPercent(percent(annualOperatingIncome, costs.totalInvestmentCosts)),
+    monthlyCashflowBeforeTax: roundMoney(annualCashflowBeforeTax / 12),
+    annualCashflowBeforeTax: roundMoney(annualCashflowBeforeTax)
   };
 }
 
@@ -327,109 +141,134 @@ export function calculateAffordability(
   financing: FinancingResult,
   profitability: ProfitabilityResult
 ): AffordabilityResult {
-  const { user } = input;
-
-  const totalMonthlyIncome =
-    user.householdNetIncome +
-    user.additionalMonthlyIncome;
-
+  const { user, property } = input;
+  const totalMonthlyIncome = user.householdNetIncome + user.additionalMonthlyIncome;
   const availableMonthlyIncome =
-    totalMonthlyIncome -
-    user.monthlyLivingCosts -
-    user.existingLoanPayments;
+    totalMonthlyIncome - user.monthlyLivingCosts - user.existingLoanPayments;
 
-  const rentalContribution =
-    input.user.purchaseGoal ===
-      "owner_occupation"
-      ? 0
-      : Math.max(
-          0,
-          profitability.annualColdRent /
-            12 +
-            profitability.monthlyCashflowBeforeTax -
-            financing.monthlyLoanRate
-        );
+  const isInvestment = user.purchaseGoal !== "owner_occupation";
+  const personalMonthlyPropertyBurden = isInvestment
+    ? -profitability.monthlyCashflowBeforeTax
+    : financing.monthlyLoanRate + property.monthlyHouseMoney;
 
-  const housingCostRatioPercent =
-    safePercentage(
-      financing.monthlyLoanRate,
-      totalMonthlyIncome
-    );
-
-  const debtServiceRatioPercent =
-    safePercentage(
-      financing.monthlyLoanRate +
-        user.existingLoanPayments,
-      totalMonthlyIncome
-    );
-
-  const remainingMonthlyLiquidity =
-    availableMonthlyIncome -
-    financing.monthlyLoanRate +
-    rentalContribution;
-
-  const remainingEquityReserve =
-    user.availableEquity -
-    input.financing.equityForPurchase;
+  const remainingMonthlyLiquidity = isInvestment
+    ? availableMonthlyIncome + profitability.monthlyCashflowBeforeTax
+    : availableMonthlyIncome - financing.monthlyLoanRate - property.monthlyHouseMoney;
 
   return {
-    availableMonthlyIncome:
-      roundCurrency(
-        availableMonthlyIncome
-      ),
-
-    housingCostRatioPercent:
-      roundPercent(
-        housingCostRatioPercent
-      ),
-
-    debtServiceRatioPercent:
-      roundPercent(
-        debtServiceRatioPercent
-      ),
-
-    remainingMonthlyLiquidity:
-      roundCurrency(
-        remainingMonthlyLiquidity
-      ),
-
-    remainingEquityReserve:
-      roundCurrency(
-        remainingEquityReserve
-      )
+    totalMonthlyIncome: roundMoney(totalMonthlyIncome),
+    availableMonthlyIncome: roundMoney(availableMonthlyIncome),
+    housingCostRatioPercent: roundPercent(percent(
+      Math.max(0, personalMonthlyPropertyBurden),
+      totalMonthlyIncome
+    )),
+    debtServiceRatioPercent: roundPercent(percent(
+      financing.monthlyLoanRate + user.existingLoanPayments,
+      totalMonthlyIncome
+    )),
+    remainingMonthlyLiquidity: roundMoney(remainingMonthlyLiquidity),
+    remainingEquityReserve: roundMoney(user.availableEquity - input.financing.equityForPurchase),
+    personalMonthlyPropertyBurden: roundMoney(personalMonthlyPropertyBurden)
   };
 }
 
-export function calculateAnalysis(
-  input: AnalysisInput
-): CalculationResult {
-  const purchaseCosts =
-    calculatePurchaseCosts(input);
+export function calculateTaxEstimate(
+  input: AnalysisInput,
+  financing: FinancingResult,
+  profitability: ProfitabilityResult
+): TaxEstimate {
+  const enabled =
+    input.settings.calculateTaxScenario &&
+    input.user.purchaseGoal !== "owner_occupation";
 
-  const financing =
-    calculateFinancing(
-      input,
-      purchaseCosts
-    );
+  if (!enabled) {
+    return {
+      enabled: false,
+      annualInterestEstimate: 0,
+      annualDepreciationEstimate: 0,
+      estimatedTaxableRentalResult: 0,
+      estimatedAnnualTaxEffect: 0,
+      disclaimer: "Für reine Eigennutzung wird keine Vermietungs-Steuerschätzung berechnet."
+    };
+  }
 
-  const profitability =
-    calculateProfitability(
-      input,
-      purchaseCosts,
-      financing
-    );
-
-  const affordability =
-    calculateAffordability(
-      input,
-      financing,
-      profitability
-    );
+  const annualInterestEstimate =
+    financing.requiredLoanAmount * input.financing.annualInterestRatePercent / 100;
+  const depreciableBuildingValue =
+    input.property.purchasePrice * input.settings.buildingValueSharePercent / 100;
+  const annualDepreciationEstimate =
+    depreciableBuildingValue * input.settings.depreciationRatePercent / 100;
+  const estimatedTaxableRentalResult =
+    profitability.annualOperatingIncome - annualInterestEstimate - annualDepreciationEstimate;
+  const estimatedAnnualTaxEffect =
+    -estimatedTaxableRentalResult * input.settings.marginalTaxRatePercent / 100;
 
   return {
-    purchaseCosts,
-    financing,
-    profitability,
-    affordability
+    enabled: true,
+    annualInterestEstimate: roundMoney(annualInterestEstimate),
+    annualDepreciationEstimate: roundMoney(annualDepreciationEstimate),
+    estimatedTaxableRentalResult: roundMoney(estimatedTaxableRentalResult),
+    estimatedAnnualTaxEffect: roundMoney(estimatedAnnualTaxEffect),
+    disclaimer:
+      "Vereinfachte Orientierung, keine Steuerberatung. Gebäudeanteil, AfA-Satz, Werbungskosten und persönliche Verhältnisse müssen fachlich geprüft werden."
   };
+}
+
+export function createFundingSuggestions(input: AnalysisInput): FundingSuggestion[] {
+  if (!input.settings.calculateSubsidyScenario) return [];
+
+  const suggestions: FundingSuggestion[] = [];
+  const energyRelevant =
+    input.property.modernizationCosts > 0 ||
+    input.property.renovationCosts > 0 ||
+    ["E", "F", "G", "H"].includes(input.property.energyClass ?? "");
+
+  if (input.user.purchaseGoal !== "capital_investment") {
+    suggestions.push({
+      id: "owner-occupied-financing",
+      title: "Förderkredite für selbstgenutztes Wohneigentum prüfen",
+      reason: "Das Vorhaben enthält Eigennutzung. Förderfähigkeit hängt von Programm, Einkommen, Objekt und Antragszeitpunkt ab.",
+      status: "needs_current_verification"
+    });
+  }
+
+  if (energyRelevant) {
+    suggestions.push({
+      id: "energy-renovation",
+      title: "Energetische Sanierungsförderung prüfen",
+      reason: "Energieklasse oder Modernisierungskosten deuten auf energetisches Verbesserungspotenzial hin.",
+      status: "needs_current_verification"
+    });
+  }
+
+  if (input.property.condition === "needs_full_renovation") {
+    suggestions.push({
+      id: "renovation-planning",
+      title: "Sanierungsfahrplan und Fachplanung prüfen",
+      reason: "Bei umfassender Sanierung können technische Planung und zeitliche Antragsreihenfolge entscheidend sein.",
+      status: "needs_current_verification"
+    });
+  }
+
+  if (suggestions.length === 0) {
+    suggestions.push({
+      id: "regional-programs",
+      title: "Regionale Förderprogramme prüfen",
+      reason: "Kommunale und Landesprogramme können je nach Standort und Nutzung ergänzend relevant sein.",
+      status: "needs_current_verification"
+    });
+  }
+
+  return suggestions;
+}
+
+export function calculateAnalysis(input: AnalysisInput): CalculationResult {
+  const purchaseCosts = calculatePurchaseCosts(input);
+  const financing = calculateFinancing(input, purchaseCosts);
+  const profitability = calculateProfitability(input, purchaseCosts, financing);
+  const affordability = calculateAffordability(input, financing, profitability);
+  const tax = calculateTaxEstimate(input, financing, profitability);
+  const fundingSuggestions = createFundingSuggestions(input);
+
+  return { purchaseCosts, financing, profitability, affordability, tax, fundingSuggestions };
 }

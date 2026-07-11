@@ -1,4 +1,4 @@
-﻿export const employmentStatuses = [
+export const employmentStatuses = [
   "permanent",
   "temporary",
   "self_employed",

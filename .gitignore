@@ -31,4 +31,6 @@ Desktop.ini
 
 # TypeScript
 *.tsbuildinfo
-next-env.d.ts
+next-env.d.ts.next/
+.update-backup-*/
+property-strategy-platform-update/

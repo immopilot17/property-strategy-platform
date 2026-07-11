@@ -1,12 +1,5 @@
-﻿import { DashboardSectionPage } from "@/components/dashboard-section-page";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return (
-    <DashboardSectionPage
-      eyebrow="Förderungen"
-      title="Passende Fördermöglichkeiten"
-      description="Hier werden KfW-Programme und weitere Fördermöglichkeiten passend zum Nutzerprofil und Objekt eingeordnet."
-      items={["Eigennutzung", "Energetische Sanierung", "Neubau und Bestand", "Voraussetzungen", "Antragsreihenfolge"]}
-    />
-  );
+  redirect("/analyse#foerderungen");
 }

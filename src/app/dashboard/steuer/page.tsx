@@ -1,12 +1,5 @@
-﻿import { DashboardSectionPage } from "@/components/dashboard-section-page";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return (
-    <DashboardSectionPage
-      eyebrow="Steuer"
-      title="Steuerliche Hinweise für Immobilienkäufer"
-      description="Hier werden steuerliche Auswirkungen getrennt nach Eigennutzung und Kapitalanlage dargestellt."
-      items={["Abschreibung", "Schuldzinsen", "Werbungskosten", "Kaufpreisaufteilung", "Sanierungskosten"]}
-    />
-  );
+  redirect("/analyse#steuer");
 }

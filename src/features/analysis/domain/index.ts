@@ -1,4 +1,4 @@
-﻿export * from "./defaults";
+export * from "./defaults";
 export * from "./enums";
 export * from "./schemas";
 export * from "./types";

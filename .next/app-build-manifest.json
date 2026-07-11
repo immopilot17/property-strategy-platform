@@ -12,7 +12,7 @@
       "static/chunks/4bd1b696-c023c6e3521b1417.js",
       "static/chunks/255-3981a3d1f3561bd8.js",
       "static/chunks/main-app-d8105c0f83d0418c.js",
-      "static/css/629c8630cbd37a41.css",
+      "static/css/bdc1f6ae4175e5f8.css",
       "static/chunks/app/layout-f222eeb983525e23.js"
     ],
     "/api/analysis/quick-check/route": [
@@ -70,14 +70,6 @@
       "static/chunks/619-ba102abea3e3d0e4.js",
       "static/chunks/app/dashboard/immobilien/page-6184e3936a24a3a0.js"
     ],
-    "/dashboard/steuer/page": [
-      "static/chunks/webpack-9b1881fda15d01ff.js",
-      "static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "static/chunks/255-3981a3d1f3561bd8.js",
-      "static/chunks/main-app-d8105c0f83d0418c.js",
-      "static/chunks/619-ba102abea3e3d0e4.js",
-      "static/chunks/app/dashboard/steuer/page-6184e3936a24a3a0.js"
-    ],
     "/dashboard/strategien/page": [
       "static/chunks/webpack-9b1881fda15d01ff.js",
       "static/chunks/4bd1b696-c023c6e3521b1417.js",
@@ -85,6 +77,14 @@
       "static/chunks/main-app-d8105c0f83d0418c.js",
       "static/chunks/619-ba102abea3e3d0e4.js",
       "static/chunks/app/dashboard/strategien/page-6184e3936a24a3a0.js"
+    ],
+    "/dashboard/steuer/page": [
+      "static/chunks/webpack-9b1881fda15d01ff.js",
+      "static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "static/chunks/255-3981a3d1f3561bd8.js",
+      "static/chunks/main-app-d8105c0f83d0418c.js",
+      "static/chunks/619-ba102abea3e3d0e4.js",
+      "static/chunks/app/dashboard/steuer/page-6184e3936a24a3a0.js"
     ],
     "/dashboard/systemstatus/page": [
       "static/chunks/webpack-9b1881fda15d01ff.js",

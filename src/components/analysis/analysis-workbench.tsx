@@ -1,5 +1,8 @@
 "use client";
-
+import {
+  UrlImporter,
+  type ImportedProperty
+} from "./url-importer";
 import { useEffect, useState } from "react";
 import type {
   AnalysisInput,
@@ -345,6 +348,23 @@ export function AnalysisWorkbench() {
       </div>
 
       <div className="mt-10 space-y-7">
+        <UrlImporter
+  onImported={(
+    imported: ImportedProperty
+  ) => {
+    setInput((current) => ({
+      ...current,
+      property: {
+        ...current.property,
+        ...imported,
+        address: {
+          ...current.property.address,
+          ...(imported.address ?? {})
+        }
+      }
+    }));
+  }}
+/>
         <section className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6">
           <h2 className="text-xl font-bold">Exposé-Text optional übernehmen</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">

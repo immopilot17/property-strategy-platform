@@ -27,13 +27,14 @@ export function PaymentPackages({ signedIn, credits }: { signedIn: boolean; cred
   return (
     <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div><p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-700">Analyse-Credits</p><h1 className="mt-3 text-4xl font-bold">Passendes Paket auswählen</h1><p className="mt-4 max-w-2xl text-slate-600">Einmalzahlung, direkt mit deinem angemeldeten Account verknüpft.</p></div>
+        <div><p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-700">Optionale Erweiterungen</p><h1 className="mt-3 text-4xl font-bold">Die Immobilienanalyse bleibt kostenlos</h1><p className="mt-4 max-w-2xl text-slate-600">Bezahle nur für zusätzliche Unterstützung. Jedes höhere Paket enthält die Funktionen der vorherigen Stufe.</p></div>
         <div className="rounded-2xl bg-slate-950 px-6 py-4 text-white"><p className="text-xs uppercase tracking-wide text-slate-400">Guthaben</p><p className="text-2xl font-bold">{credits} Credits</p></div>
       </div>
       <div className="mt-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {paymentPackages.map((item) => (
           <article key={item.code} className="flex flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-bold">{item.name}</h2><p className="mt-3 text-4xl font-bold">{(item.priceCents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</p><p className="mt-2 text-slate-600">{item.credits} Analyse-Credits</p>
+            <h2 className="text-xl font-bold">{item.name}</h2><p className="mt-3 text-4xl font-bold">{(item.priceCents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</p><p className="mt-2 text-slate-600">{item.credits} Credits für Zusatzfunktionen</p>
+            <ul className="mt-5 flex-1 space-y-2 text-sm leading-6 text-slate-600">{item.features.map((feature) => <li key={feature}>✓ {feature}</li>)}</ul>
             <div className="mt-6 space-y-3">
               <button onClick={() => checkout("stripe", item.code)} disabled={Boolean(loading)} className="w-full rounded-xl bg-slate-950 px-4 py-3 font-bold text-white disabled:opacity-50">Apple Pay / Google Pay</button>
               <button onClick={() => checkout("paypal", item.code)} disabled={Boolean(loading)} className="w-full rounded-xl border border-blue-700 px-4 py-3 font-bold text-blue-800 disabled:opacity-50">PayPal</button>

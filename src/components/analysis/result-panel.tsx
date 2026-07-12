@@ -1,7 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { AnalysisInput, FullAnalysisResult, RiskLevel, StrategyType } from "@/features/analysis/domain";
 import { FundingIntelligence } from "./funding-intelligence";
+import { hasTier, type AccessTier } from "@/features/payments/packages";
 
 const eur = (value: number) =>
   new Intl.NumberFormat("de-DE", {
@@ -47,6 +50,10 @@ function Metric({ label, value, note }: { label: string; value: string; note?: s
   );
 }
 
+function Upgrade({ title, tier }: { title: string; tier: string }) {
+  return <section className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6"><h2 className="text-xl font-bold">{title}</h2><p className="mt-2 text-sm leading-6 text-slate-600">Diese vertiefende Auswertung gehört zum Paket {tier}. Die grundlegende Immobilienanalyse bleibt kostenlos.</p><Link href="/dashboard/zahlungen" className="mt-4 inline-block rounded-xl bg-slate-950 px-4 py-3 font-bold text-white">Pakete vergleichen</Link></section>;
+}
+
 export function ResultPanel({
   result,
   aiSummary,
@@ -64,6 +71,8 @@ export function ResultPanel({
   onCloudSave: () => void;
   input: AnalysisInput;
 }) {
+  const [accessTier, setAccessTier] = useState<AccessTier>("free");
+  useEffect(() => { fetch("/api/payments/entitlements").then((response) => response.json()).then((data: { tier?: AccessTier }) => setAccessTier(data.tier ?? "free")).catch(() => setAccessTier("free")); }, []);
   const recommended = result.strategies.find(
     (strategy) => strategy.type === result.recommendedStrategyType
   );
@@ -92,21 +101,15 @@ export function ResultPanel({
           <Metric label="Gesamtinvestition" value={eur(result.purchaseCosts.totalInvestmentCosts)} />
           <Metric label="Darlehenssumme" value={eur(result.financing.requiredLoanAmount)} />
           <Metric label="Monatliche Rate" value={eur(result.financing.monthlyLoanRate)} />
-          <Metric label="Restschuld nach Zinsbindung" value={eur(result.financing.remainingDebtAfterFixedPeriod)} />
           <Metric label="Kaufpreis je m²" value={eur(result.profitability.pricePerSquareMeter)} />
-          <Metric label="Bruttomietrendite" value={pct(result.profitability.grossRentalYieldPercent)} />
-          <Metric label="Cashflow vor Steuer" value={eur(result.profitability.monthlyCashflowBeforeTax)} />
           <Metric label="Verbleibende Liquidität" value={eur(result.affordability.remainingMonthlyLiquidity)} />
-          <Metric label="Haushaltseinkommen gesamt" value={eur(result.affordability.totalMonthlyIncome)} />
-          <Metric label="Bestehende Kreditraten gesamt" value={eur(result.affordability.totalExistingLoanPayments)} />
-          <Metric label="Eigenkapital gesamt" value={eur(result.affordability.totalAvailableEquity)} />
         </div>
       </section>
 
       <section id="risiken">
         <h2 className="text-2xl font-bold">Erkannte Risiken</h2>
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
-          {result.risks.map((risk) => (
+          {result.risks.slice(0, 4).map((risk) => (
             <article key={risk.id} className={`rounded-2xl border p-5 ${riskClass[risk.level]}`}>
               <div className="flex items-start justify-between gap-4">
                 <h3 className="font-bold">{risk.title}</h3>
@@ -125,7 +128,7 @@ export function ResultPanel({
         </div>
       </section>
 
-      <section id="strategien">
+      {hasTier(accessTier, "plus") ? <section id="strategien">
         <div>
           <h2 className="text-2xl font-bold">Finanzierungsstrategien</h2>
           {recommended ? (
@@ -185,9 +188,9 @@ export function ResultPanel({
             </article>
           ))}
         </div>
-      </section>
+      </section> : <Upgrade title="Finanzierungsalternativen verständlich vergleichen" tier="Finanzierung" />}
 
-      <section id="agenten">
+      {hasTier(accessTier, "pro") ? <section id="agenten">
         <h2 className="text-2xl font-bold">Agenten- und Supervisor-Prüfung</h2>
         {result.supervisor ? <>
         <div className="mt-5 rounded-3xl bg-slate-950 p-6 text-white">
@@ -206,9 +209,9 @@ export function ResultPanel({
           ))}
         </div>
         </> : <p className="mt-4 text-slate-600">Für ältere gespeicherte Analysen bitte die Analyse erneut berechnen.</p>}
-      </section>
+      </section> : <Upgrade title="Persönliche Strategie- und Agentenprüfung" tier="Strategie" />}
 
-      <section id="steuer" className="grid gap-5 lg:grid-cols-2">
+      {hasTier(accessTier, "pro") ? <section id="steuer" className="grid gap-5 lg:grid-cols-2">
         <article className="rounded-3xl border border-slate-200 bg-white p-6">
           <h2 className="text-xl font-bold">Steuerliche Orientierung</h2>
           <p className="mt-2 text-sm text-slate-600">
@@ -228,10 +231,11 @@ export function ResultPanel({
           <p className="mt-5 text-xs leading-5 text-slate-500">{result.tax.disclaimer}</p>
         </article>
 
-        <FundingIntelligence input={input} />
+        {hasTier(accessTier, "plus") ? <FundingIntelligence input={input} /> : null}
       </section>
+      : hasTier(accessTier, "plus") ? <FundingIntelligence input={input} /> : <Upgrade title="Förderung und steuerliche Orientierung" tier="Finanzierung oder Strategie" />}
 
-      <section className="rounded-3xl bg-slate-950 p-7 text-white">
+      {hasTier(accessTier, "starter") ? <section className="rounded-3xl bg-slate-950 p-7 text-white">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <h2 className="text-2xl font-bold">KI-Erklärung und Cloudspeicherung</h2>
@@ -248,6 +252,7 @@ export function ResultPanel({
             >
               {aiLoading ? "KI wertet aus…" : "KI-Erklärung erstellen"}
             </button>
+            {hasTier(accessTier, "premium") ? <button type="button" onClick={() => { sessionStorage.setItem("property-strategy-report", JSON.stringify({ input, result, aiSummary })); window.open("/analyse/bericht", "_blank", "noopener,noreferrer"); }} className="rounded-xl border border-emerald-400 px-4 py-3 font-bold text-emerald-300">PDF-Bericht erstellen</button> : null}
             <button
               type="button"
               onClick={onCloudSave}
@@ -264,7 +269,7 @@ export function ResultPanel({
             {aiSummary}
           </div>
         ) : null}
-      </section>
+      </section> : <Upgrade title="KI-Erklärung und Cloudspeicherung" tier="Basis Plus" />}
 
       <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
         <h2 className="font-bold">Annahmen und Grenzen</h2>

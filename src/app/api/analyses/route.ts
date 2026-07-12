@@ -2,6 +2,7 @@ import { z } from "zod";
 import { validateAnalysisInput } from "@/features/analysis/domain";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
+import { requireTier } from "@/features/payments/server";
 
 const saveSchema = z.object({
   title: z.string().trim().min(2).max(150),
@@ -38,6 +39,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const access = await requireTier("starter");
+  if (!access.allowed) return Response.json({ ok: false, message: "Cloudspeicherung ist ab Basis Plus verfügbar." }, { status: 403 });
   const auth = await authenticatedClient();
   if ("error" in auth) {
     return Response.json(

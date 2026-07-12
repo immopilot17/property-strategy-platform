@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { requireTier } from "@/features/payments/server";
 
 const requestSchema = z.object({
   input: z.record(z.unknown()),
@@ -20,6 +21,8 @@ function extractOutputText(data: unknown): string | null {
 }
 
 export async function POST(request: Request) {
+  const access = await requireTier("starter");
+  if (!access.allowed) return Response.json({ ok: false, message: "Die KI-Erklärung ist ab Basis Plus verfügbar." }, { status: 403 });
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return Response.json(

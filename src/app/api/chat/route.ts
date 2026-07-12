@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { requireTier } from "@/features/payments/server";
 
 const messageSchema = z.object({ role: z.enum(["user", "assistant"]), content: z.string().trim().min(1).max(4000) });
 const requestSchema = z.object({ messages: z.array(messageSchema).min(1).max(12), analysis: z.unknown().optional() });
@@ -10,6 +11,8 @@ function outputText(data: unknown) {
 }
 
 export async function POST(request: Request) {
+  const access = await requireTier("starter");
+  if (!access.allowed) return Response.json({ message: "Der Analyse-Assistent ist ab Basis Plus verfügbar." }, { status: 403 });
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ message: "Bitte anmelden, um den Assistenten zu nutzen." }, { status: 401 });

@@ -36,3 +36,8 @@ textarea {
 button {
   cursor: pointer;
 }
+
+@media print {
+  header[role="banner"], footer[role="contentinfo"], body > div > button { display: none !important; }
+  body { background: white; }
+}

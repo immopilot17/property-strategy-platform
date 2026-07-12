@@ -158,6 +158,7 @@ function Section({
 }
 
 export function AnalysisWorkbench() {
+  const [step, setStep] = useState(1);
   const [input, setInput] = useState<AnalysisInput>(defaultAnalysisInput);
   const [result, setResult] = useState<FullAnalysisResult | null>(null);
   const [errors, setErrors] = useState<ApiError[]>([]);
@@ -355,16 +356,22 @@ export function AnalysisWorkbench() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="max-w-4xl">
-        <p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-700">Vollständige Analyse</p>
+        <p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-700">Kostenlose Immobilienanalyse</p>
         <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
-          Immobilie, Finanzierung und Risiko in einem Ablauf
+          In vier einfachen Schritten zur verständlichen Einschätzung
         </h1>
         <p className="mt-5 text-lg leading-8 text-slate-600">
-          Alle Zahlen werden deterministisch berechnet. Die KI wird nur optional für Import und verständliche Erklärung verwendet.
+          Wir fragen nur die Angaben ab, die für deine Einschätzung benötigt werden. Erweiterte Details kannst du später öffnen.
         </p>
       </div>
 
       <div className="mt-10 space-y-7">
+        <nav aria-label="Analysefortschritt" className="rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="flex items-center justify-between gap-4"><p className="font-bold">Schritt {step} von 4</p><p className="text-sm text-slate-500">{["Immobilie", "Haushalt", "Finanzierung", "Prüfen"][step - 1]}</p></div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${step * 25}%` }} /></div>
+          <div className="mt-4 hidden grid-cols-4 gap-2 text-center text-xs font-medium text-slate-500 sm:grid">{["1 · Immobilie", "2 · Haushalt", "3 · Finanzierung", "4 · Prüfen"].map((label, index) => <button type="button" key={label} onClick={() => setStep(index + 1)} className={step === index + 1 ? "text-emerald-700" : "hover:text-slate-900"}>{label}</button>)}</div>
+        </nav>
+        {step === 1 ? <>
         <UrlImporter
   onImported={(
     imported: ImportedProperty
@@ -406,7 +413,9 @@ export function AnalysisWorkbench() {
             {importStatus ? <p className="text-sm text-slate-600">{importStatus}</p> : null}
           </div>
         </section>
+        </> : null}
 
+        {step === 2 ? <>
         <Section id="finanzen" eyebrow="1 · Haushalt" title="Finanzprofil">
           <SelectField label="Familienstand" value={input.user.maritalStatus} options={maritalOptions} onChange={(v) => updateUser("maritalStatus", v as AnalysisInput["user"]["maritalStatus"])} />
           <SelectField label="Kaufart" value={input.user.purchaseType} options={purchaseTypeOptions} onChange={(v) => updateUser("purchaseType", v as AnalysisInput["user"]["purchaseType"])} />
@@ -438,7 +447,9 @@ export function AnalysisWorkbench() {
             <NumberField label="Grenzsteuersatz Partner" value={input.user.partner.marginalTaxRatePercent} onChange={(v) => updatePartner("marginalTaxRatePercent", v)} suffix="%" step="0.1" />
           </Section>
         ) : null}
+        </> : null}
 
+        {step === 1 ? (
         <Section id="immobilie" eyebrow="2 · Objekt" title="Immobiliendaten">
           <TextField label="Bezeichnung" value={input.property.title} onChange={(v) => updateProperty("title", v)} />
           <TextField label="Quell-URL" value={input.property.sourceUrl} onChange={(v) => updateProperty("sourceUrl", v || undefined)} type="url" />
@@ -483,11 +494,13 @@ export function AnalysisWorkbench() {
             <span className="font-semibold">Ersterwerb von Wohneigentum</span>
           </label>
         </Section>
+        ) : null}
 
+        {step === 3 ? (
         <Section id="finanzierung" eyebrow="3 · Darlehen" title="Finanzierungsannahmen">
-          <NumberField label="Eigenkapitaleinsatz gesamt" value={input.financing.equityForPurchase} onChange={(v) => updateFinancing("equityForPurchase", v)} />
-          <NumberField label="Sollzins" value={input.financing.annualInterestRatePercent} onChange={(v) => updateFinancing("annualInterestRatePercent", v)} suffix="%" step="0.01" />
-          <NumberField label="Anfängliche Tilgung" value={input.financing.initialRepaymentPercent} onChange={(v) => updateFinancing("initialRepaymentPercent", v)} suffix="%" step="0.01" />
+          <NumberField label="Eigenkapital für diesen Kauf" value={input.financing.equityForPurchase} onChange={(v) => updateFinancing("equityForPurchase", v)} />
+          <NumberField label="Zinssatz des Darlehens" value={input.financing.annualInterestRatePercent} onChange={(v) => updateFinancing("annualInterestRatePercent", v)} suffix="%" step="0.01" />
+          <NumberField label="Anfängliche Rückzahlung pro Jahr" value={input.financing.initialRepaymentPercent} onChange={(v) => updateFinancing("initialRepaymentPercent", v)} suffix="%" step="0.01" />
           <NumberField label="Zinsbindung" value={input.financing.fixedInterestYears} onChange={(v) => updateFinancing("fixedInterestYears", v)} suffix="Jahre" />
           <NumberField label="Gesamtlaufzeit" value={input.financing.totalTermYears} onChange={(v) => updateFinancing("totalTermYears", v)} suffix="Jahre" />
           <NumberField label="Zusätzliche Monatszahlung" value={input.financing.additionalMonthlyPayment} onChange={(v) => updateFinancing("additionalMonthlyPayment", v)} />
@@ -501,7 +514,9 @@ export function AnalysisWorkbench() {
             <span className="font-semibold">Projektkosten mitfinanzieren</span>
           </label>
         </Section>
+        ) : null}
 
+        {step === 4 ? (
         <Section id="annahmen" eyebrow="4 · Szenario" title="Steuer- und Prognoseannahmen">
           <NumberField label="Gebäudeanteil" value={input.settings.buildingValueSharePercent} onChange={(v) => updateSettings("buildingValueSharePercent", v)} suffix="%" step="0.1" />
           <NumberField label="AfA-Satz" value={input.settings.depreciationRatePercent} onChange={(v) => updateSettings("depreciationRatePercent", v)} suffix="%" step="0.1" />
@@ -510,6 +525,7 @@ export function AnalysisWorkbench() {
           <NumberField label="Mietentwicklung jährlich" value={input.settings.annualRentGrowthPercent} onChange={(v) => updateSettings("annualRentGrowthPercent", v)} suffix="%" step="0.1" min="-20" />
           <NumberField label="Kostensteigerung jährlich" value={input.settings.annualCostGrowthPercent} onChange={(v) => updateSettings("annualCostGrowthPercent", v)} suffix="%" step="0.1" min="-20" />
         </Section>
+        ) : null}
 
         {errors.length ? (
           <section className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900">
@@ -524,15 +540,16 @@ export function AnalysisWorkbench() {
           </section>
         ) : null}
 
-        <div className="sticky bottom-4 z-20 flex justify-center">
-          <button
+        <div className="sticky bottom-4 z-20 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur">
+          <button type="button" onClick={() => setStep((current) => Math.max(1, current - 1))} disabled={step === 1} className="rounded-xl px-5 py-3 font-bold text-slate-700 disabled:opacity-30">Zurück</button>
+          {step < 4 ? <button type="button" onClick={() => setStep((current) => Math.min(4, current + 1))} className="rounded-xl bg-emerald-600 px-6 py-3 font-bold text-white">Weiter</button> : <button
             type="button"
             onClick={runAnalysis}
             disabled={loading}
             className="rounded-2xl bg-emerald-600 px-8 py-4 text-lg font-bold text-white shadow-xl hover:bg-emerald-700 disabled:opacity-50"
           >
-            {loading ? "Analyse wird berechnet…" : "Vollständige Analyse berechnen"}
-          </button>
+            {loading ? "Analyse wird berechnet…" : "Kostenlose Analyse starten"}
+          </button>}
         </div>
 
         {result ? (

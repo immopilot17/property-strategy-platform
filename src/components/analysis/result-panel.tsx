@@ -1,6 +1,7 @@
 "use client";
 
-import type { FullAnalysisResult, RiskLevel, StrategyType } from "@/features/analysis/domain";
+import type { AnalysisInput, FullAnalysisResult, RiskLevel, StrategyType } from "@/features/analysis/domain";
+import { FundingIntelligence } from "./funding-intelligence";
 
 const eur = (value: number) =>
   new Intl.NumberFormat("de-DE", {
@@ -52,7 +53,8 @@ export function ResultPanel({
   aiLoading,
   cloudStatus,
   onExplain,
-  onCloudSave
+  onCloudSave,
+  input
 }: {
   result: FullAnalysisResult;
   aiSummary: string;
@@ -60,6 +62,7 @@ export function ResultPanel({
   cloudStatus: string;
   onExplain: () => void;
   onCloudSave: () => void;
+  input: AnalysisInput;
 }) {
   const recommended = result.strategies.find(
     (strategy) => strategy.type === result.recommendedStrategyType
@@ -225,20 +228,7 @@ export function ResultPanel({
           <p className="mt-5 text-xs leading-5 text-slate-500">{result.tax.disclaimer}</p>
         </article>
 
-        <article id="foerderungen" className="rounded-3xl border border-slate-200 bg-white p-6">
-          <h2 className="text-xl font-bold">Förderprüfungen</h2>
-          <div className="mt-4 space-y-4">
-            {result.fundingSuggestions.map((suggestion) => (
-              <div key={suggestion.id} className="rounded-2xl bg-slate-100 p-4">
-                <h3 className="font-bold">{suggestion.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{suggestion.reason}</p>
-                <p className="mt-2 text-xs font-bold uppercase tracking-wide text-amber-700">
-                  Aktuell verifizieren
-                </p>
-              </div>
-            ))}
-          </div>
-        </article>
+        <FundingIntelligence input={input} />
       </section>
 
       <section className="rounded-3xl bg-slate-950 p-7 text-white">

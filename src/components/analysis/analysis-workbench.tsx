@@ -537,6 +537,7 @@ export function AnalysisWorkbench() {
 
         {result ? (
           <ResultPanel
+            input={input}
             result={result}
             aiSummary={aiSummary}
             aiLoading={aiLoading}

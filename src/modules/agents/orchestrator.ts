@@ -21,11 +21,6 @@ export function orchestrateAnalysis(input: AnalysisInput, result: CalculationRes
     "Sanierungs- und Instandhaltungsbudget fachlich verifizieren."
   ]);
 
-  const funding = finding("funding", "Förder-Agent", `${result.fundingSuggestions.length} Förderansätze wurden anhand von Nutzung, Kindern, Einkommen, Bundesland und Vorhaben erkannt.`, result.fundingSuggestions.length ? 75 : 35, [
-    "Programme und Einkommensgrenzen vor Vertragsabschluss aktuell prüfen.",
-    "Förderanträge grundsätzlich vor Vorhabensbeginn klären."
-  ], input.property.address.federalState ? [] : ["Bundesland fehlt; regionale Förderungen sind unvollständig."]);
-
   const tax = finding("tax", "Steuer-Agent", result.tax.enabled ? `Geschätzter jährlicher Steuereffekt: ${Math.round(result.tax.estimatedAnnualTaxEffect)} €.` : "Bei Eigennutzung entsteht keine Vermietungs-Steuerschätzung.", result.tax.enabled ? 70 : 60, [
     "AfA-Bemessungsgrundlage und Werbungskosten steuerlich prüfen lassen.",
     "Die Berechnung nur als unverbindliche Schätzung verwenden."
@@ -36,7 +31,7 @@ export function orchestrateAnalysis(input: AnalysisInput, result: CalculationRes
     "Liquiditätsreserve nicht für planbare Kaufnebenkosten aufbrauchen."
   ], risks.filter((item) => item.level === "critical" || item.level === "high").map((item) => item.title));
 
-  const agents = [financing, property, funding, tax, risk];
+  const agents = [financing, property, tax, risk];
   const sorted = [...agents].sort((a, b) => a.facts.score - b.facts.score);
   const supervisor: SupervisorResult = {
     verdict: sorted[0].facts.score >= 70 ? "Die Analyse ist insgesamt tragfähig; Detailprüfungen bleiben erforderlich." : "Vor einer Entscheidung sollten die schwächsten Bereiche verbessert oder fachlich geklärt werden.",

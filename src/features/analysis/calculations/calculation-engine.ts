@@ -240,52 +240,8 @@ export function calculateTaxEstimate(
 }
 
 export function createFundingSuggestions(input: AnalysisInput): FundingSuggestion[] {
-  if (!input.settings.calculateSubsidyScenario) return [];
-
-  const suggestions: FundingSuggestion[] = [];
-  const energyRelevant =
-    input.property.energeticRenovationPlanned ||
-    input.property.modernizationCosts > 0 ||
-    input.property.renovationCosts > 0 ||
-    ["E", "F", "G", "H"].includes(input.property.energyClass ?? "");
-
-  if (input.user.purchaseGoal !== "capital_investment") {
-    suggestions.push({
-      id: "owner-occupied-financing",
-      title: "Förderkredite für selbstgenutztes Wohneigentum prüfen",
-      reason: "Das Vorhaben enthält Eigennutzung. Förderfähigkeit hängt von Programm, Einkommen, Objekt und Antragszeitpunkt ab.",
-      status: "needs_current_verification"
-    });
-  }
-
-  if (energyRelevant) {
-    suggestions.push({
-      id: "energy-renovation",
-      title: "Energetische Sanierungsförderung prüfen",
-      reason: "Energieklasse oder Modernisierungskosten deuten auf energetisches Verbesserungspotenzial hin.",
-      status: "needs_current_verification"
-    });
-  }
-
-  if (input.property.condition === "needs_full_renovation") {
-    suggestions.push({
-      id: "renovation-planning",
-      title: "Sanierungsfahrplan und Fachplanung prüfen",
-      reason: "Bei umfassender Sanierung können technische Planung und zeitliche Antragsreihenfolge entscheidend sein.",
-      status: "needs_current_verification"
-    });
-  }
-
-  if (suggestions.length === 0) {
-    suggestions.push({
-      id: "regional-programs",
-      title: "Regionale Förderprogramme prüfen",
-      reason: "Kommunale und Landesprogramme können je nach Standort und Nutzung ergänzend relevant sein.",
-      status: "needs_current_verification"
-    });
-  }
-
-  return suggestions;
+  void input;
+  return [];
 }
 
 export function calculateAnalysis(input: AnalysisInput): CalculationResult {

@@ -64,6 +64,29 @@ export default function HomePage() {
         <p className="mt-8 text-sm leading-6 text-slate-500">Keine Vorkenntnisse nötig. Angaben können später ergänzt oder geändert werden.</p>
       </section>
 
+      <section className="border-y border-slate-200 bg-slate-50">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
+          <div className="max-w-2xl">
+            <h2 className="text-3xl font-bold tracking-tight text-slate-950">Verstehen, bevor du entscheidest</h2>
+            <p className="mt-4 text-lg leading-8 text-slate-600">Die Plattform ist kein Immobilienportal und kein Kreditvermittler. Sie hilft dir, deine Möglichkeiten, Risiken und nächsten Schritte nachvollziehbar einzuordnen.</p>
+          </div>
+          <div className="mt-9 grid gap-8 md:grid-cols-3">
+            <article>
+              <h3 className="text-lg font-bold text-slate-950">Schritt für Schritt</h3>
+              <p className="mt-2 leading-7 text-slate-600">Du siehst immer nur die Information, die für deine nächste Entscheidung wichtig ist.</p>
+            </article>
+            <article>
+              <h3 className="text-lg font-bold text-slate-950">Zahlen mit Erklärung</h3>
+              <p className="mt-2 leading-7 text-slate-600">Berechnungen basieren auf deinen Eingaben. Annahmen und Schätzungen werden klar gekennzeichnet.</p>
+            </article>
+            <article>
+              <h3 className="text-lg font-bold text-slate-950">Orientierung statt Verkaufsdruck</h3>
+              <p className="mt-2 leading-7 text-slate-600">Du erhältst Chancen, Risiken und konkrete nächste Schritte – verständlich und ohne versteckte Empfehlung.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
       {mode ? (
         <div role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setMode(null)} className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/45 p-0 backdrop-blur-sm sm:items-center sm:p-6">
           <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="entry-title" tabIndex={-1} className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl outline-none sm:max-w-2xl sm:rounded-3xl sm:p-8">

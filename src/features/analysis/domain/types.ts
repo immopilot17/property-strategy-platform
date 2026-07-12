@@ -62,6 +62,8 @@ export type ProfitabilityResult = {
 
 export type AffordabilityResult = {
   totalMonthlyIncome: number;
+  totalExistingLoanPayments: number;
+  totalAvailableEquity: number;
   availableMonthlyIncome: number;
   housingCostRatioPercent: number;
   debtServiceRatioPercent: number;
@@ -72,8 +74,11 @@ export type AffordabilityResult = {
 
 export type TaxEstimate = {
   enabled: boolean;
+  assessmentType: "individual" | "joint";
+  useType: "owner_occupation" | "capital_investment" | "mixed_use";
   annualInterestEstimate: number;
   annualDepreciationEstimate: number;
+  annualAdvertisingCostsEstimate: number;
   estimatedTaxableRentalResult: number;
   estimatedAnnualTaxEffect: number;
   disclaimer: string;

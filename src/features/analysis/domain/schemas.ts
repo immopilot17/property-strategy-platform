@@ -1,11 +1,14 @@
 import { z } from "zod";
 import {
   employmentStatuses,
+  maritalStatuses,
   occupancyTypes,
   propertyConditions,
   propertyTypes,
   purchaseGoals,
-  riskPreferences
+  riskPreferences,
+  purchaseTypes,
+  projectTypes
 } from "./enums";
 
 const money = z.coerce.number().finite().min(0);
@@ -18,6 +21,8 @@ const optionalUrl = z.string().trim().optional().or(z.literal(""))
   .transform((value) => value || undefined);
 
 export const userProfileSchema = z.object({
+  maritalStatus: z.enum(maritalStatuses),
+  purchaseType: z.enum(purchaseTypes),
   householdNetIncome: positiveMoney,
   additionalMonthlyIncome: money.default(0),
   monthlyLivingCosts: money,
@@ -27,14 +32,28 @@ export const userProfileSchema = z.object({
   numberOfAdults: z.coerce.number().int().min(1).max(10),
   numberOfChildren: z.coerce.number().int().min(0).max(20).default(0),
   employmentStatus: z.enum(employmentStatuses),
+  annualGrossIncome: money.default(0),
+  marginalTaxRatePercent: percentage.default(35),
+  partner: z.object({
+    monthlyNetIncome: money.default(0),
+    additionalMonthlyIncome: money.default(0),
+    employmentStatus: z.enum(employmentStatuses),
+    existingLoanPayments: money.default(0),
+    availableEquity: money.default(0),
+    annualGrossIncome: money.default(0),
+    marginalTaxRatePercent: percentage.default(35)
+  }).optional(),
   purchaseGoal: z.enum(purchaseGoals),
   riskPreference: z.enum(riskPreferences),
   plannedMonthlyMaximumRate: money,
   desiredRemainingReserve: money,
   notes: optionalText
 }).superRefine((profile, context) => {
-  const income = profile.householdNetIncome + profile.additionalMonthlyIncome;
-  if (profile.monthlyLivingCosts + profile.existingLoanPayments >= income) {
+  const partnerIncome = profile.purchaseType === "joint" && profile.partner
+    ? profile.partner.monthlyNetIncome + profile.partner.additionalMonthlyIncome : 0;
+  const partnerLoans = profile.purchaseType === "joint" ? profile.partner?.existingLoanPayments ?? 0 : 0;
+  const income = profile.householdNetIncome + profile.additionalMonthlyIncome + partnerIncome;
+  if (profile.monthlyLivingCosts + profile.existingLoanPayments + partnerLoans >= income) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["monthlyLivingCosts"],
@@ -64,6 +83,9 @@ export const propertyProfileSchema = z.object({
   propertyType: z.enum(propertyTypes),
   condition: z.enum(propertyConditions),
   occupancyType: z.enum(occupancyTypes),
+  projectType: z.enum(projectTypes),
+  energeticRenovationPlanned: z.boolean().default(false),
+  firstPurchase: z.boolean().default(false),
   address: propertyAddressSchema,
   purchasePrice: positiveMoney,
   livingArea: z.coerce.number().finite().positive().max(100000),
@@ -141,7 +163,9 @@ export const analysisInputSchema = z.object({
   financing: financingProfileSchema,
   settings: analysisSettingsSchema
 }).superRefine((input, context) => {
-  if (input.financing.equityForPurchase > input.user.availableEquity) {
+  const availableEquity = input.user.availableEquity +
+    (input.user.purchaseType === "joint" ? input.user.partner?.availableEquity ?? 0 : 0);
+  if (input.financing.equityForPurchase > availableEquity) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["financing", "equityForPurchase"],

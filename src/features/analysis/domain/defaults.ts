@@ -7,6 +7,8 @@ import type {
 } from "./types";
 
 export const defaultUserProfile: UserProfile = {
+  maritalStatus: "married",
+  purchaseType: "joint",
   householdNetIncome: 5300,
   additionalMonthlyIncome: 0,
   monthlyLivingCosts: 2100,
@@ -16,6 +18,17 @@ export const defaultUserProfile: UserProfile = {
   numberOfAdults: 2,
   numberOfChildren: 0,
   employmentStatus: "permanent",
+  annualGrossIncome: 78000,
+  marginalTaxRatePercent: 35,
+  partner: {
+    monthlyNetIncome: 0,
+    additionalMonthlyIncome: 0,
+    employmentStatus: "permanent",
+    existingLoanPayments: 0,
+    availableEquity: 0,
+    annualGrossIncome: 0,
+    marginalTaxRatePercent: 35
+  },
   purchaseGoal: "capital_investment",
   riskPreference: "balanced",
   plannedMonthlyMaximumRate: 2200,
@@ -29,6 +42,9 @@ export const defaultPropertyProfile: PropertyProfile = {
   propertyType: "apartment",
   condition: "good",
   occupancyType: "vacant",
+  projectType: "existing",
+  energeticRenovationPlanned: false,
+  firstPurchase: true,
   address: { street: "", houseNumber: "", postalCode: "", city: "", federalState: "" },
   purchasePrice: 300000,
   livingArea: 80,

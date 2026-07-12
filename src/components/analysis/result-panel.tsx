@@ -94,6 +94,9 @@ export function ResultPanel({
           <Metric label="Bruttomietrendite" value={pct(result.profitability.grossRentalYieldPercent)} />
           <Metric label="Cashflow vor Steuer" value={eur(result.profitability.monthlyCashflowBeforeTax)} />
           <Metric label="Verbleibende Liquidität" value={eur(result.affordability.remainingMonthlyLiquidity)} />
+          <Metric label="Haushaltseinkommen gesamt" value={eur(result.affordability.totalMonthlyIncome)} />
+          <Metric label="Bestehende Kreditraten gesamt" value={eur(result.affordability.totalExistingLoanPayments)} />
+          <Metric label="Eigenkapital gesamt" value={eur(result.affordability.totalAvailableEquity)} />
         </div>
       </section>
 
@@ -184,10 +187,14 @@ export function ResultPanel({
       <section id="steuer" className="grid gap-5 lg:grid-cols-2">
         <article className="rounded-3xl border border-slate-200 bg-white p-6">
           <h2 className="text-xl font-bold">Steuerliche Orientierung</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            {result.tax.assessmentType === "joint" ? "Gemeinsamer Kauf" : "Kauf allein"} · {result.tax.useType === "owner_occupation" ? "Eigennutzung" : result.tax.useType === "capital_investment" ? "Kapitalanlage" : "Gemischte Nutzung"} · Schätzung
+          </p>
           {result.tax.enabled ? (
             <div className="mt-4 space-y-3">
               <p>Geschätzte Zinsen im ersten Jahr: <strong>{eur(result.tax.annualInterestEstimate)}</strong></p>
               <p>Geschätzte AfA: <strong>{eur(result.tax.annualDepreciationEstimate)}</strong></p>
+              <p>Geschätzte Werbungskosten: <strong>{eur(result.tax.annualAdvertisingCostsEstimate)}</strong></p>
               <p>Geschätztes steuerliches Vermietungsergebnis: <strong>{eur(result.tax.estimatedTaxableRentalResult)}</strong></p>
               <p>Orientierender Steuereffekt: <strong>{eur(result.tax.estimatedAnnualTaxEffect)}</strong></p>
             </div>

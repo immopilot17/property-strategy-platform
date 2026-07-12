@@ -142,9 +142,15 @@ export function calculateAffordability(
   profitability: ProfitabilityResult
 ): AffordabilityResult {
   const { user, property } = input;
-  const totalMonthlyIncome = user.householdNetIncome + user.additionalMonthlyIncome;
+  const includePartner = user.purchaseType === "joint" && Boolean(user.partner);
+  const partnerIncome = includePartner ? (user.partner?.monthlyNetIncome ?? 0) + (user.partner?.additionalMonthlyIncome ?? 0) : 0;
+  const partnerLoans = includePartner ? user.partner?.existingLoanPayments ?? 0 : 0;
+  const partnerEquity = includePartner ? user.partner?.availableEquity ?? 0 : 0;
+  const totalMonthlyIncome = user.householdNetIncome + user.additionalMonthlyIncome + partnerIncome;
+  const totalExistingLoanPayments = user.existingLoanPayments + partnerLoans;
+  const totalAvailableEquity = user.availableEquity + partnerEquity;
   const availableMonthlyIncome =
-    totalMonthlyIncome - user.monthlyLivingCosts - user.existingLoanPayments;
+    totalMonthlyIncome - user.monthlyLivingCosts - totalExistingLoanPayments;
 
   const isInvestment = user.purchaseGoal !== "owner_occupation";
   const personalMonthlyPropertyBurden = isInvestment
@@ -157,17 +163,19 @@ export function calculateAffordability(
 
   return {
     totalMonthlyIncome: roundMoney(totalMonthlyIncome),
+    totalExistingLoanPayments: roundMoney(totalExistingLoanPayments),
+    totalAvailableEquity: roundMoney(totalAvailableEquity),
     availableMonthlyIncome: roundMoney(availableMonthlyIncome),
     housingCostRatioPercent: roundPercent(percent(
       Math.max(0, personalMonthlyPropertyBurden),
       totalMonthlyIncome
     )),
     debtServiceRatioPercent: roundPercent(percent(
-      financing.monthlyLoanRate + user.existingLoanPayments,
+      financing.monthlyLoanRate + totalExistingLoanPayments,
       totalMonthlyIncome
     )),
     remainingMonthlyLiquidity: roundMoney(remainingMonthlyLiquidity),
-    remainingEquityReserve: roundMoney(user.availableEquity - input.financing.equityForPurchase),
+    remainingEquityReserve: roundMoney(totalAvailableEquity - input.financing.equityForPurchase),
     personalMonthlyPropertyBurden: roundMoney(personalMonthlyPropertyBurden)
   };
 }
@@ -180,12 +188,17 @@ export function calculateTaxEstimate(
   const enabled =
     input.settings.calculateTaxScenario &&
     input.user.purchaseGoal !== "owner_occupation";
+  const assessmentType = input.user.purchaseType === "joint" ? "joint" : "individual";
+  const useType = input.user.purchaseGoal;
 
   if (!enabled) {
     return {
       enabled: false,
+      assessmentType,
+      useType,
       annualInterestEstimate: 0,
       annualDepreciationEstimate: 0,
+      annualAdvertisingCostsEstimate: 0,
       estimatedTaxableRentalResult: 0,
       estimatedAnnualTaxEffect: 0,
       disclaimer: "Für reine Eigennutzung wird keine Vermietungs-Steuerschätzung berechnet."
@@ -198,15 +211,27 @@ export function calculateTaxEstimate(
     input.property.purchasePrice * input.settings.buildingValueSharePercent / 100;
   const annualDepreciationEstimate =
     depreciableBuildingValue * input.settings.depreciationRatePercent / 100;
+  const annualAdvertisingCostsEstimate =
+    input.property.monthlyNonRecoverableCosts * 12 +
+    input.property.purchasePrice * input.property.annualMaintenancePercent / 100;
   const estimatedTaxableRentalResult =
-    profitability.annualOperatingIncome - annualInterestEstimate - annualDepreciationEstimate;
+    profitability.effectiveAnnualRent - annualInterestEstimate - annualDepreciationEstimate - annualAdvertisingCostsEstimate;
+  const partnerTaxRate = input.user.purchaseType === "joint"
+    ? input.user.partner?.marginalTaxRatePercent ?? input.user.marginalTaxRatePercent
+    : input.user.marginalTaxRatePercent;
+  const effectiveTaxRate = input.user.purchaseType === "joint"
+    ? (input.user.marginalTaxRatePercent + partnerTaxRate) / 2
+    : input.user.marginalTaxRatePercent;
   const estimatedAnnualTaxEffect =
-    -estimatedTaxableRentalResult * input.settings.marginalTaxRatePercent / 100;
+    -estimatedTaxableRentalResult * effectiveTaxRate / 100;
 
   return {
     enabled: true,
+    assessmentType,
+    useType,
     annualInterestEstimate: roundMoney(annualInterestEstimate),
     annualDepreciationEstimate: roundMoney(annualDepreciationEstimate),
+    annualAdvertisingCostsEstimate: roundMoney(annualAdvertisingCostsEstimate),
     estimatedTaxableRentalResult: roundMoney(estimatedTaxableRentalResult),
     estimatedAnnualTaxEffect: roundMoney(estimatedAnnualTaxEffect),
     disclaimer:
@@ -219,6 +244,7 @@ export function createFundingSuggestions(input: AnalysisInput): FundingSuggestio
 
   const suggestions: FundingSuggestion[] = [];
   const energyRelevant =
+    input.property.energeticRenovationPlanned ||
     input.property.modernizationCosts > 0 ||
     input.property.renovationCosts > 0 ||
     ["E", "F", "G", "H"].includes(input.property.energyClass ?? "");

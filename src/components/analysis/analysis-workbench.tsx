@@ -40,6 +40,17 @@ const riskOptions: Option[] = [
   { value: "balanced", label: "Ausgewogen" },
   { value: "growth", label: "Wachstumsorientiert" }
 ];
+const maritalOptions: Option[] = [
+  { value: "single", label: "Ledig" }, { value: "married", label: "Verheiratet" },
+  { value: "civil_partnership", label: "Eingetragene Partnerschaft" },
+  { value: "divorced", label: "Geschieden" }, { value: "widowed", label: "Verwitwet" }
+];
+const purchaseTypeOptions: Option[] = [
+  { value: "alone", label: "Allein" }, { value: "joint", label: "Gemeinsam" }
+];
+const projectTypeOptions: Option[] = [
+  { value: "new_build", label: "Neubau" }, { value: "existing", label: "Bestand" }
+];
 
 const propertyOptions: Option[] = [
   { value: "apartment", label: "Eigentumswohnung" },
@@ -185,6 +196,12 @@ export function AnalysisWorkbench() {
     key: K,
     value: AnalysisInput["settings"][K]
   ) => setInput((current) => ({ ...current, settings: { ...current.settings, [key]: value } }));
+
+  const updatePartner = <K extends keyof NonNullable<AnalysisInput["user"]["partner"]>>(
+    key: K, value: NonNullable<AnalysisInput["user"]["partner"]>[K]
+  ) => setInput((current) => ({
+    ...current, user: { ...current.user, partner: { ...current.user.partner!, [key]: value } }
+  }));
 
   const runAnalysis = async () => {
     setLoading(true);
@@ -391,6 +408,8 @@ export function AnalysisWorkbench() {
         </section>
 
         <Section id="finanzen" eyebrow="1 · Haushalt" title="Finanzprofil">
+          <SelectField label="Familienstand" value={input.user.maritalStatus} options={maritalOptions} onChange={(v) => updateUser("maritalStatus", v as AnalysisInput["user"]["maritalStatus"])} />
+          <SelectField label="Kaufart" value={input.user.purchaseType} options={purchaseTypeOptions} onChange={(v) => updateUser("purchaseType", v as AnalysisInput["user"]["purchaseType"])} />
           <NumberField label="Haushaltsnettoeinkommen" value={input.user.householdNetIncome} onChange={(v) => updateUser("householdNetIncome", v)} />
           <NumberField label="Zusätzliche Einnahmen" value={input.user.additionalMonthlyIncome} onChange={(v) => updateUser("additionalMonthlyIncome", v)} />
           <NumberField label="Monatliche Lebenshaltung" value={input.user.monthlyLivingCosts} onChange={(v) => updateUser("monthlyLivingCosts", v)} />
@@ -402,9 +421,23 @@ export function AnalysisWorkbench() {
           <NumberField label="Erwachsene" value={input.user.numberOfAdults} onChange={(v) => updateUser("numberOfAdults", v)} suffix="" />
           <NumberField label="Kinder" value={input.user.numberOfChildren} onChange={(v) => updateUser("numberOfChildren", v)} suffix="" />
           <SelectField label="Beschäftigung" value={input.user.employmentStatus} options={employmentOptions} onChange={(v) => updateUser("employmentStatus", v as AnalysisInput["user"]["employmentStatus"])} />
+          <NumberField label="Jahresbrutto Hauptperson" value={input.user.annualGrossIncome} onChange={(v) => updateUser("annualGrossIncome", v)} />
+          <NumberField label="Grenzsteuersatz Hauptperson" value={input.user.marginalTaxRatePercent} onChange={(v) => updateUser("marginalTaxRatePercent", v)} suffix="%" step="0.1" />
           <SelectField label="Kaufziel" value={input.user.purchaseGoal} options={goalOptions} onChange={(v) => updateUser("purchaseGoal", v as AnalysisInput["user"]["purchaseGoal"])} />
           <SelectField label="Risikoprofil" value={input.user.riskPreference} options={riskOptions} onChange={(v) => updateUser("riskPreference", v as AnalysisInput["user"]["riskPreference"])} />
         </Section>
+
+        {input.user.purchaseType === "joint" && input.user.partner ? (
+          <Section id="partner" eyebrow="1a · Haushalt" title="Partnerdaten (optional)">
+            <NumberField label="Nettoeinkommen Partner" value={input.user.partner.monthlyNetIncome} onChange={(v) => updatePartner("monthlyNetIncome", v)} />
+            <NumberField label="Zusätzliche Einnahmen Partner" value={input.user.partner.additionalMonthlyIncome} onChange={(v) => updatePartner("additionalMonthlyIncome", v)} />
+            <SelectField label="Beschäftigung Partner" value={input.user.partner.employmentStatus} options={employmentOptions} onChange={(v) => updatePartner("employmentStatus", v as NonNullable<AnalysisInput["user"]["partner"]>["employmentStatus"])} />
+            <NumberField label="Kreditraten Partner" value={input.user.partner.existingLoanPayments} onChange={(v) => updatePartner("existingLoanPayments", v)} />
+            <NumberField label="Eigenkapital Partner" value={input.user.partner.availableEquity} onChange={(v) => updatePartner("availableEquity", v)} />
+            <NumberField label="Jahresbrutto Partner" value={input.user.partner.annualGrossIncome} onChange={(v) => updatePartner("annualGrossIncome", v)} />
+            <NumberField label="Grenzsteuersatz Partner" value={input.user.partner.marginalTaxRatePercent} onChange={(v) => updatePartner("marginalTaxRatePercent", v)} suffix="%" step="0.1" />
+          </Section>
+        ) : null}
 
         <Section id="immobilie" eyebrow="2 · Objekt" title="Immobiliendaten">
           <TextField label="Bezeichnung" value={input.property.title} onChange={(v) => updateProperty("title", v)} />
@@ -412,7 +445,9 @@ export function AnalysisWorkbench() {
           <SelectField label="Immobilientyp" value={input.property.propertyType} options={propertyOptions} onChange={(v) => updateProperty("propertyType", v as AnalysisInput["property"]["propertyType"])} />
           <SelectField label="Zustand" value={input.property.condition} options={conditionOptions} onChange={(v) => updateProperty("condition", v as AnalysisInput["property"]["condition"])} />
           <SelectField label="Nutzung" value={input.property.occupancyType} options={occupancyOptions} onChange={(v) => updateProperty("occupancyType", v as AnalysisInput["property"]["occupancyType"])} />
+          <SelectField label="Vorhaben" value={input.property.projectType} options={projectTypeOptions} onChange={(v) => updateProperty("projectType", v as AnalysisInput["property"]["projectType"])} />
           <TextField label="Ort" value={input.property.address.city} onChange={(v) => setInput((c) => ({ ...c, property: { ...c.property, address: { ...c.property.address, city: v } } }))} />
+          <TextField label="Bundesland" value={input.property.address.federalState} onChange={(v) => setInput((c) => ({ ...c, property: { ...c.property, address: { ...c.property.address, federalState: v } } }))} />
           <TextField label="Postleitzahl" value={input.property.address.postalCode} onChange={(v) => setInput((c) => ({ ...c, property: { ...c.property, address: { ...c.property.address, postalCode: v } } }))} />
           <NumberField label="Kaufpreis" value={input.property.purchasePrice} onChange={(v) => updateProperty("purchasePrice", v)} />
           <NumberField label="Wohnfläche" value={input.property.livingArea} onChange={(v) => updateProperty("livingArea", v)} suffix="m²" step="0.1" />
@@ -439,6 +474,14 @@ export function AnalysisWorkbench() {
             ]}
             onChange={(v) => updateProperty("energyClass", v ? v as PropertyProfile["energyClass"] : undefined)}
           />
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 p-4">
+            <input type="checkbox" checked={input.property.energeticRenovationPlanned} onChange={(e) => updateProperty("energeticRenovationPlanned", e.target.checked)} />
+            <span className="font-semibold">Energetische Sanierung geplant</span>
+          </label>
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 p-4">
+            <input type="checkbox" checked={input.property.firstPurchase} onChange={(e) => updateProperty("firstPurchase", e.target.checked)} />
+            <span className="font-semibold">Ersterwerb von Wohneigentum</span>
+          </label>
         </Section>
 
         <Section id="finanzierung" eyebrow="3 · Darlehen" title="Finanzierungsannahmen">

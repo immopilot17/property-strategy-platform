@@ -7,6 +7,10 @@ export const employmentStatuses = [
   "other"
 ] as const;
 
+export const maritalStatuses = ["single", "married", "civil_partnership", "divorced", "widowed"] as const;
+export const purchaseTypes = ["alone", "joint"] as const;
+export const projectTypes = ["new_build", "existing"] as const;
+
 export const purchaseGoals = [
   "owner_occupation",
   "capital_investment",

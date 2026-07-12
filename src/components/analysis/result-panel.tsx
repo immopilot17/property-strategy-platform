@@ -184,6 +184,27 @@ export function ResultPanel({
         </div>
       </section>
 
+      <section id="agenten">
+        <h2 className="text-2xl font-bold">Agenten- und Supervisor-Prüfung</h2>
+        {result.supervisor ? <>
+        <div className="mt-5 rounded-3xl bg-slate-950 p-6 text-white">
+          <p className="text-xs font-bold uppercase tracking-wide text-emerald-300">Supervisor</p>
+          <p className="mt-3 text-lg leading-7">{result.supervisor.verdict}</p>
+          <ol className="mt-4 space-y-2 text-sm text-slate-200">{result.supervisor.priorityActions.map((item, index) => <li key={item}>{index + 1}. {item}</li>)}</ol>
+          {result.supervisor.conflicts.map((item) => <p key={item} className="mt-3 rounded-xl bg-amber-400/15 p-3 text-sm text-amber-100">Konflikt: {item}</p>)}
+        </div>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {(result.agentFindings ?? []).map((item) => (
+            <article key={item.agent} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-start justify-between gap-3"><h3 className="font-bold">{item.facts.title}</h3><span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">{item.facts.score}/100</span></div>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{item.facts.summary}</p>
+              {item.warnings.map((warning) => <p key={warning} className="mt-3 text-sm font-medium text-amber-700">{warning}</p>)}
+            </article>
+          ))}
+        </div>
+        </> : <p className="mt-4 text-slate-600">Für ältere gespeicherte Analysen bitte die Analyse erneut berechnen.</p>}
+      </section>
+
       <section id="steuer" className="grid gap-5 lg:grid-cols-2">
         <article className="rounded-3xl border border-slate-200 bg-white p-6">
           <h2 className="text-xl font-bold">Steuerliche Orientierung</h2>

@@ -2,11 +2,13 @@ import { calculateAnalysis } from "./calculations";
 import type { AnalysisInput, FullAnalysisResult } from "./domain";
 import { analyzeRisks } from "./risks";
 import { generateStrategies, getRecommendedStrategyType } from "./strategies";
+import { orchestrateAnalysis } from "@/modules/agents/orchestrator";
 
 export function runFullAnalysis(input: AnalysisInput): FullAnalysisResult {
   const calculation = calculateAnalysis(input);
   const risk = analyzeRisks(input, calculation);
   const strategies = generateStrategies(input);
+  const orchestration = orchestrateAnalysis(input, calculation, risk.risks);
 
   return {
     analysisId: crypto.randomUUID(),
@@ -20,6 +22,8 @@ export function runFullAnalysis(input: AnalysisInput): FullAnalysisResult {
       "Miete, Leerstand, Instandhaltung und Sanierung beruhen auf Nutzereingaben.",
       "Steuerwerte sind vereinfachte Orientierungswerte und keine Beratung.",
       "Förderprogramme werden als Prüfansätze angezeigt und müssen aktuell verifiziert werden."
-    ]
+    ],
+    agentFindings: orchestration.agents,
+    supervisor: orchestration.supervisor
   };
 }

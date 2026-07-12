@@ -8,6 +8,7 @@ import type {
   propertyProfileSchema,
   userProfileSchema
 } from "./schemas";
+import type { AnalysisAgentFinding, SupervisorResult } from "@/modules/agents/agent-types";
 
 export type UserProfile = z.infer<typeof userProfileSchema>;
 export type PropertyAddress = z.infer<typeof propertyAddressSchema>;
@@ -132,4 +133,6 @@ export type FullAnalysisResult = CalculationResult & {
   strategies: StrategyResult[];
   recommendedStrategyType: StrategyType;
   assumptions: string[];
+  agentFindings: AnalysisAgentFinding[];
+  supervisor: SupervisorResult;
 };

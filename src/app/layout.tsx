@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
+import { Chatbot } from "@/components/chat/chatbot";
 
 export const metadata: Metadata = {
   title: {
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </nav>
         </header>
         {children}
+        <Chatbot />
         <footer className="border-t border-slate-200 bg-white">
           <div className="mx-auto max-w-7xl px-4 py-8 text-sm leading-6 text-slate-500 sm:px-6 lg:px-8">
             Rechnerische Orientierung, keine Finanz-, Rechts- oder Steuerberatung. Eingaben und Objektunterlagen müssen vor einer Entscheidung geprüft werden.

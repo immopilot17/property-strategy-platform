@@ -94,6 +94,7 @@ create table if not exists public.payments (
   currency text not null default 'EUR',
   status text not null,
   package_code text,
+  credits integer not null default 0,
   created_at timestamptz not null default now()
 );
 

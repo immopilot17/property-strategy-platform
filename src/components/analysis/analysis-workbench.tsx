@@ -12,6 +12,9 @@ import type {
 import { defaultAnalysisInput } from "@/features/analysis/domain";
 import {
   consumeActiveAnalysis,
+  clearAnalysisDraft,
+  readAnalysisDraft,
+  saveAnalysisDraft,
   saveLocalAnalysis,
   type SavedAnalysis
 } from "@/lib/storage/analyses";
@@ -152,7 +155,7 @@ function Section({
     <section id={id} className="scroll-mt-24 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">{eyebrow}</p>
       <h2 className="mt-2 text-2xl font-bold">{title}</h2>
-      <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">{children}</div>
+  <div className="mt-6 grid max-w-2xl gap-5">{children}</div>
     </section>
   );
 }
@@ -175,7 +178,19 @@ export function AnalysisWorkbench() {
       setInput(active.input);
       setResult(active.result);
       setAiSummary(active.aiSummary ?? "");
+      return;
     }
+    const draft = readAnalysisDraft();
+    if (draft) setInput(draft);
+  }, []);
+
+  useEffect(() => {
+    saveAnalysisDraft(input);
+  }, [input]);
+
+  useEffect(() => {
+    const sourceUrl = new URLSearchParams(window.location.search).get("sourceUrl");
+    if (sourceUrl) setInput((current) => ({ ...current, property: { ...current.property, sourceUrl } }));
   }, []);
 
   const updateUser = <K extends keyof AnalysisInput["user"]>(
@@ -236,6 +251,7 @@ export function AnalysisWorkbench() {
         result: data.result
       };
       saveLocalAnalysis(saved);
+      clearAnalysisDraft();
       window.setTimeout(() => document.getElementById("ergebnis")?.scrollIntoView({ behavior: "smooth" }), 50);
     } catch {
       setErrors([{ message: "Die Analyse konnte nicht gestartet werden." }]);

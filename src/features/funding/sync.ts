@@ -33,7 +33,7 @@ export async function synchronizeFundingProviders() {
     try {
       const urls = await provider.discover();
       entry.discovered = urls.length;
-      await mapWithConcurrency(urls, 2, async (url) => {
+      await mapWithConcurrency(urls, 1, async (url) => {
         try {
           const document = await provider.collect(url);
           const { data: current, error: currentError } = await supabase.from("funding_program_versions").select("source_checksum").eq("provider_id", provider.id).eq("official_source", url).order("fetched_at", { ascending: false }).limit(1).maybeSingle();

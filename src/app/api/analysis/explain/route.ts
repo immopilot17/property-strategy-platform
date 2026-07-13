@@ -1,24 +1,11 @@
 import { z } from "zod";
 import { requireTier } from "@/features/payments/server";
+import { extractOpenAIOutputText } from "@/lib/openai";
 
 const requestSchema = z.object({
   input: z.record(z.unknown()),
   result: z.record(z.unknown())
 });
-
-function extractOutputText(data: unknown): string | null {
-  if (!data || typeof data !== "object") return null;
-  const response = data as {
-    output?: Array<{ content?: Array<{ type?: string; text?: string }> }>;
-  };
-
-  for (const item of response.output ?? []) {
-    for (const content of item.content ?? []) {
-      if (content.type === "output_text" && content.text) return content.text;
-    }
-  }
-  return null;
-}
 
 export async function POST(request: Request) {
   const access = await requireTier("starter");
@@ -64,7 +51,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const explanation = extractOutputText(data);
+    const explanation = extractOpenAIOutputText(data);
     if (!explanation) {
       return Response.json(
         { ok: false, configured: true, message: "Die KI hat keinen auswertbaren Text geliefert." },

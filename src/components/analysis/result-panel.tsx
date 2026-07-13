@@ -103,7 +103,11 @@ export function ResultPanel({
           <Metric label="Monatliche Rate" value={eur(result.financing.monthlyLoanRate)} />
           <Metric label="Kaufpreis je m²" value={eur(result.profitability.pricePerSquareMeter)} />
           <Metric label="Verbleibende Liquidität" value={eur(result.affordability.remainingMonthlyLiquidity)} />
+          {result.financing.monthlySpecialRepayment > 0 ? <Metric label="Monatliche Sondertilgung" value={eur(result.financing.monthlySpecialRepayment)} /> : null}
         </div>
+        {result.financing.projectedMonthlyLoanRateAfterFixedPeriod > 0 ? (
+          <p className="mt-4 text-sm text-slate-600">Nach Ablauf der Zinsbindung könnte die Rate bei einem erwarteten Anschlusszins von {result.financing.projectedAnnualInterestRateAfterFixedPeriodPercent.toFixed(2)} % auf etwa {eur(result.financing.projectedMonthlyLoanRateAfterFixedPeriod)} steigen.</p>
+        ) : null}
       </section>
 
       <section id="risiken">
@@ -127,6 +131,25 @@ export function ResultPanel({
           ))}
         </div>
       </section>
+
+      {result.fundingSuggestions.length ? <section id="foerderhinweise">
+        <h2 className="text-2xl font-bold">Förderhinweise</h2>
+        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+          {result.fundingSuggestions.map((suggestion) => (
+            <article key={suggestion.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-bold">{suggestion.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{suggestion.reason}</p>
+                </div>
+                <span className={`rounded-full px-3 py-1 text-xs font-bold ${suggestion.status === "needs_current_verification" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
+                  {suggestion.status === "needs_current_verification" ? "Daten ergänzen" : "Prüfen"}
+                </span>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section> : null}
 
       {hasTier(accessTier, "plus") ? <section id="strategien">
         <div>

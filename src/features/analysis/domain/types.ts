@@ -44,8 +44,11 @@ export type FinancingResult = {
   equityAppliedToFinancedAmount: number;
   requiredLoanAmount: number;
   monthlyLoanRate: number;
+  monthlySpecialRepayment: number;
   annualLoanRate: number;
   remainingDebtAfterFixedPeriod: number;
+  projectedMonthlyLoanRateAfterFixedPeriod: number;
+  projectedAnnualInterestRateAfterFixedPeriodPercent: number;
   loanToValuePercent: number;
 };
 

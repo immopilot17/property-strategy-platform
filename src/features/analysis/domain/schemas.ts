@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { locationAddressSchema } from "@/features/location/domain";
 import {
   employmentStatuses,
   maritalStatuses,
@@ -69,11 +70,7 @@ export const userProfileSchema = z.object({
   }
 });
 
-export const propertyAddressSchema = z.object({
-  street: z.string().trim().max(150).default(""),
-  houseNumber: z.string().trim().max(30).default(""),
-  postalCode: z.string().trim().regex(/^$|^\d{5}$/, "Postleitzahl muss fünfstellig sein.").default(""),
-  city: z.string().trim().max(100).default(""),
+export const propertyAddressSchema = locationAddressSchema.extend({
   federalState: z.string().trim().max(100).default("")
 });
 

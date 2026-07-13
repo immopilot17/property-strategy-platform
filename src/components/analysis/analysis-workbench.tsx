@@ -239,7 +239,11 @@ export function AnalysisWorkbench() {
           address: {
             ...current.property.address,
             city: typeof extracted.city === "string" ? extracted.city : current.property.address.city,
-            postalCode: typeof extracted.postalCode === "string" ? extracted.postalCode : current.property.address.postalCode
+            postalCode: typeof extracted.postalCode === "string" ? extracted.postalCode : current.property.address.postalCode,
+            latitude: null,
+            longitude: null,
+            locationSource: null,
+            geocodedAt: null
           }
         };
         return { ...current, property };

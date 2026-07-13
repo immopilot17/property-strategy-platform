@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "leaflet/dist/leaflet.css";
 import "./globals.css";
 import { Chatbot } from "@/components/chat/chatbot";
 import { SiteFooter } from "@/components/layout/site-footer";

@@ -29,17 +29,18 @@ create table if not exists public.financial_profiles (
 
 create table if not exists public.properties (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  title text not null,
-  purchase_price numeric,
-  living_area numeric,
-  city text,
-  postal_code text,
-  year_built integer,
-  monthly_rent numeric,
-  monthly_service_charge numeric,
-  renovation_cost numeric,
-  energy_class text,
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  address_line1 text not null,
+  street text not null default '',
+  house_number text not null default '',
+  city text not null default '',
+  postal_code text not null,
+  country text not null default 'Deutschland',
+  lat double precision,
+  lon double precision,
+  location_source text,
+  geocoded_at timestamptz,
+  metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
 
@@ -158,8 +159,9 @@ with check (auth.uid() = user_id);
 
 create policy "properties_owner_all"
 on public.properties for all
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+to authenticated
+using ((select auth.uid()) = owner_id)
+with check ((select auth.uid()) = owner_id);
 
 create policy "analyses_owner_all"
 on public.analyses for all

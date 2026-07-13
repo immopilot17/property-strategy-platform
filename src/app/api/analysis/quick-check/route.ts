@@ -11,15 +11,30 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  const parsed = schema.safeParse(body);
+  try {
+    const body = await request.json();
+    const parsed = schema.safeParse(body);
 
-  if (!parsed.success) {
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingaben", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(calculateAffordability(parsed.data));
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      console.error("quick-check.parse-error", error.message);
+      return NextResponse.json(
+        { error: "Ungültiges JSON-Format." },
+        { status: 400 }
+      );
+    }
+    console.error("quick-check.error", error instanceof Error ? error.message : String(error));
     return NextResponse.json(
-      { error: "Ungültige Eingaben", details: parsed.error.flatten() },
-      { status: 400 }
+      { error: "Die Schnellprüfung konnte nicht verarbeitet werden." },
+      { status: 500 }
     );
   }
-
-  return NextResponse.json(calculateAffordability(parsed.data));
 }

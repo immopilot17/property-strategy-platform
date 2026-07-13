@@ -3,6 +3,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { ArrowLeft, ArrowRight, Check, Cloud, Home, Landmark, SearchCheck, Users } from "lucide-react";
 import clsx from "clsx";
+import { LocationFields } from "@/components/location/LocationFields";
 import type { AnalysisInput, PropertyProfile } from "@/features/analysis/domain";
 import { Button } from "@/components/ui/button";
 import { Disclosure } from "@/components/ui/disclosure";
@@ -184,7 +185,15 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
   const handleImported = (imported: ImportedProperty) => {
     setInput((current) => ({
       ...current,
-      property: { ...current.property, ...imported, address: { ...current.property.address, ...(imported.address ?? {}) } }
+      property: {
+        ...current.property,
+        ...imported,
+        address: {
+          ...current.property.address,
+          ...(imported.address ?? {}),
+          ...(imported.address ? { latitude: null, longitude: null, locationSource: null, geocodedAt: null } : {})
+        }
+      }
     }));
   };
   const moveToStep = (nextStep: number) => {
@@ -258,11 +267,25 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
               <SelectField label="Immobilientyp" value={input.property.propertyType} options={propertyOptions} onChange={(value) => onPropertyChange("propertyType", value as AnalysisInput["property"]["propertyType"])} />
               <ChoiceGroup label="Vorhaben" value={input.property.projectType} options={[{ value: "new_build", label: "Neubau" }, { value: "existing", label: "Bestand" }]} onChange={(value) => onPropertyChange("projectType", value as AnalysisInput["property"]["projectType"])} />
               <TextField label="Bundesland" value={input.property.address.federalState} onChange={(value) => updateAddress("federalState", value)} hint="Wichtig für Kaufnebenkosten und Landesförderungen" />
-              <TextField label="Ort" value={input.property.address.city} onChange={(value) => updateAddress("city", value)} />
               <NumberField label="Kaufpreis" value={input.property.purchasePrice} onChange={(value) => onPropertyChange("purchasePrice", value)} />
               <NumberField label="Wohnfläche" value={input.property.livingArea} onChange={(value) => onPropertyChange("livingArea", value)} suffix="m²" step="0.1" />
               {input.user.purchaseGoal !== "owner_occupation" ? <NumberField label="Monatliche Kaltmiete" value={input.property.monthlyColdRent} onChange={(value) => onPropertyChange("monthlyColdRent", value)} /> : null}
               <SelectField label="Nutzung heute" value={input.property.occupancyType} options={occupancyOptions} onChange={(value) => onPropertyChange("occupancyType", value as AnalysisInput["property"]["occupancyType"])} />
+            </div>
+
+            <div className="mt-7 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <Disclosure title="Standort und Karte" description="Adresse automatisch finden oder Koordinaten manuell korrigieren">
+                <LocationFields
+                  value={input.property.address}
+                  onChange={(location) => setInput((current) => ({
+                    ...current,
+                    property: {
+                      ...current.property,
+                      address: { ...location, federalState: current.property.address.federalState }
+                    }
+                  }))}
+                />
+              </Disclosure>
             </div>
 
             <div className="mt-7 rounded-2xl border border-slate-200 dark:border-slate-700">
@@ -277,9 +300,6 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
               <Disclosure title="Weitere Immobiliendetails" description="Kosten, Adresse, Fläche und Mietannahmen">
                 <div className="grid gap-5 sm:grid-cols-2">
                   <TextField label="Quell-URL" value={input.property.sourceUrl} onChange={(value) => onPropertyChange("sourceUrl", value || undefined)} type="url" />
-                  <TextField label="Postleitzahl" value={input.property.address.postalCode} onChange={(value) => updateAddress("postalCode", value)} />
-                  <TextField label="Straße" value={input.property.address.street} onChange={(value) => updateAddress("street", value)} />
-                  <TextField label="Hausnummer" value={input.property.address.houseNumber} onChange={(value) => updateAddress("houseNumber", value)} />
                   <NumberField label="Grundstück" value={input.property.landArea} onChange={(value) => onPropertyChange("landArea", value)} suffix="m²" step="0.1" />
                   <NumberField label="Einheiten" value={input.property.numberOfUnits} onChange={(value) => onPropertyChange("numberOfUnits", value)} suffix="" />
                   <NumberField label="Baujahr" value={input.property.yearBuilt} onChange={(value) => onPropertyChange("yearBuilt", value || undefined)} suffix="" min="1800" />

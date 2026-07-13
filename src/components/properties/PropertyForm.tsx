@@ -2,12 +2,23 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
+import { LocationFields } from "@/components/location/LocationFields";
 import { Button } from "@/components/ui/button";
+import type { LocationAddress } from "@/features/location/domain";
+
+const emptyLocation = (): LocationAddress => ({
+  street: "",
+  houseNumber: "",
+  postalCode: "",
+  city: "",
+  latitude: null,
+  longitude: null,
+  locationSource: null,
+  geocodedAt: null
+});
 
 export default function PropertyForm() {
-  const [addressLine1, setAddressLine1] = useState("");
-  const [city, setCity] = useState("");
-  const [postalCode, setPostalCode] = useState("");
+  const [location, setLocation] = useState<LocationAddress>(emptyLocation);
   const [country, setCountry] = useState("Deutschland");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState(false);
@@ -22,14 +33,22 @@ export default function PropertyForm() {
       const response = await fetch("/api/properties", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address_line1: addressLine1, city, postal_code: postalCode, country })
+        body: JSON.stringify({
+          street: location.street,
+          house_number: location.houseNumber,
+          city: location.city,
+          postal_code: location.postalCode,
+          country,
+          lat: location.latitude,
+          lon: location.longitude,
+          location_source: location.locationSource,
+          geocoded_at: location.geocodedAt
+        })
       });
-      const data = await response.json() as { message?: string };
+      const data = await response.json() as { message?: string; location_status?: string };
       if (!response.ok) throw new Error(data.message || "Immobilie konnte nicht gespeichert werden.");
-      setMessage("Immobilie wurde gespeichert.");
-      setAddressLine1("");
-      setCity("");
-      setPostalCode("");
+      setMessage(data.location_status === "found" ? "Immobilie und Standort wurden gespeichert." : "Immobilie wurde gespeichert. Der Standort kann später ergänzt werden.");
+      setLocation(emptyLocation());
       setCountry("Deutschland");
       window.dispatchEvent(new CustomEvent("property:created"));
     } catch (caught) {
@@ -47,11 +66,7 @@ export default function PropertyForm() {
       <h2 className="text-xl font-bold text-ink dark:text-white">Immobilie hinzufügen</h2>
       <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Speichere nur die Adresse. Finanzdaten werden erst in einer Analyse ergänzt.</p>
       <div className="mt-6 space-y-4">
-        <label className="block"><span className="text-sm font-bold text-ink dark:text-white">Straße und Hausnummer</span><input required value={addressLine1} onChange={(event) => setAddressLine1(event.target.value)} autoComplete="street-address" className={fieldClass} /></label>
-        <div className="grid gap-4 sm:grid-cols-[0.55fr_1fr]">
-          <label className="block"><span className="text-sm font-bold text-ink dark:text-white">Postleitzahl</span><input required inputMode="numeric" pattern="[0-9]{5}" value={postalCode} onChange={(event) => setPostalCode(event.target.value)} autoComplete="postal-code" className={fieldClass} /></label>
-          <label className="block"><span className="text-sm font-bold text-ink dark:text-white">Ort</span><input required value={city} onChange={(event) => setCity(event.target.value)} autoComplete="address-level2" className={fieldClass} /></label>
-        </div>
+        <LocationFields value={location} onChange={setLocation} postalCodeRequired />
         <label className="block"><span className="text-sm font-bold text-ink dark:text-white">Land</span><input required value={country} onChange={(event) => setCountry(event.target.value)} autoComplete="country-name" className={fieldClass} /></label>
       </div>
       <Button type="submit" disabled={loading} className="mt-6 w-full"><Plus size={18} aria-hidden="true" />{loading ? "Wird gespeichert …" : "Immobilie speichern"}</Button>

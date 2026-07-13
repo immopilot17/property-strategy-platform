@@ -1,21 +1,9 @@
 import { z } from "zod";
+import { extractOpenAIOutputText } from "@/lib/openai";
 
 const requestSchema = z.object({
   text: z.string().trim().min(50).max(30000)
 });
-
-function outputText(data: unknown): string | null {
-  if (!data || typeof data !== "object") return null;
-  const response = data as {
-    output?: Array<{ content?: Array<{ type?: string; text?: string }> }>;
-  };
-  for (const item of response.output ?? []) {
-    for (const content of item.content ?? []) {
-      if (content.type === "output_text" && content.text) return content.text;
-    }
-  }
-  return null;
-}
 
 export async function POST(request: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -80,7 +68,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const textOutput = outputText(data);
+    const textOutput = extractOpenAIOutputText(data);
     if (!textOutput) {
       return Response.json({ ok: false, message: "Keine Daten erkannt." }, { status: 502 });
     }

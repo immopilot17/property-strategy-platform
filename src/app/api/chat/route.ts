@@ -1,14 +1,10 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requireTier } from "@/features/payments/server";
+import { extractOpenAIOutputText } from "@/lib/openai";
 
 const messageSchema = z.object({ role: z.enum(["user", "assistant"]), content: z.string().trim().min(1).max(4000) });
 const requestSchema = z.object({ messages: z.array(messageSchema).min(1).max(12), analysis: z.unknown().optional() });
-
-function outputText(data: unknown) {
-  const response = data as { output?: Array<{ content?: Array<{ type?: string; text?: string }> }> };
-  return response.output?.flatMap((item) => item.content ?? []).find((item) => item.type === "output_text")?.text;
-}
 
 export async function POST(request: Request) {
   const access = await requireTier("starter");
@@ -30,7 +26,7 @@ export async function POST(request: Request) {
       })
     });
     const data: unknown = await response.json();
-    const answer = outputText(data);
+    const answer = extractOpenAIOutputText(data);
     if (!response.ok || !answer) return Response.json({ message: "Der Assistent konnte nicht antworten." }, { status: 502 });
     return Response.json({ answer });
   } catch {

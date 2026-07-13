@@ -1,9 +1,5 @@
 import { normalizedFundingProgramSchema, type FundingSourceDocument } from "./domain";
-
-function extractOutputText(data: unknown) {
-  const response = data as { output?: Array<{ content?: Array<{ type?: string; text?: string }> }> };
-  return response.output?.flatMap((item) => item.content ?? []).find((item) => item.type === "output_text")?.text;
-}
+import { extractOpenAIOutputText } from "@/lib/openai";
 
 export async function normalizeFundingDocument(document: FundingSourceDocument) {
   if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY fehlt für die Fördernormalisierung.");
@@ -34,7 +30,7 @@ export async function normalizeFundingDocument(document: FundingSourceDocument) 
     })
   });
   const data: unknown = await response.json();
-  const text = extractOutputText(data);
+  const text = extractOpenAIOutputText(data);
   if (!response.ok || !text) throw new Error(`Normalisierung fehlgeschlagen (${response.status}).`);
   const normalized = normalizedFundingProgramSchema.parse({ ...JSON.parse(text), providerId: document.providerId, officialSource: document.sourceUrl, lastUpdated: document.fetchedAt });
   if (normalized.providerId !== document.providerId || normalized.officialSource !== document.sourceUrl) throw new Error("Normalisierte Quelle stimmt nicht mit dem Original überein.");

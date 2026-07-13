@@ -40,6 +40,9 @@ export function matchFundingPrograms(input: AnalysisInput, rows: unknown[]) {
     const matchedRequirements: string[] = [];
     const openRequirements: string[] = [];
     const failedRequirements: string[] = [];
+    if (program.eligibility.length === 0) {
+      openRequirements.push("Die persönlichen Fördervoraussetzungen müssen anhand der offiziellen Quelle geprüft werden.");
+    }
     for (const requirement of program.eligibility) {
       const actual = userFacts[requirement.field];
       if (actual === "" || actual === "unknown" || actual === undefined) openRequirements.push(requirement.explanation);

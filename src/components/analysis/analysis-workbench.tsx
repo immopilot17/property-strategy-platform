@@ -171,6 +171,8 @@ export function AnalysisWorkbench() {
   const [cloudStatus, setCloudStatus] = useState("");
   const [importText, setImportText] = useState("");
   const [importStatus, setImportStatus] = useState("");
+  const [initialSourceUrl, setInitialSourceUrl] = useState("");
+  const [analysisStatus, setAnalysisStatus] = useState("");
 
   useEffect(() => {
     const active = consumeActiveAnalysis();
@@ -190,7 +192,10 @@ export function AnalysisWorkbench() {
 
   useEffect(() => {
     const sourceUrl = new URLSearchParams(window.location.search).get("sourceUrl");
-    if (sourceUrl) setInput((current) => ({ ...current, property: { ...current.property, sourceUrl } }));
+    if (sourceUrl) {
+      setInitialSourceUrl(sourceUrl);
+      setInput((current) => ({ ...current, property: { ...current.property, sourceUrl } }));
+    }
   }, []);
 
   const updateUser = <K extends keyof AnalysisInput["user"]>(
@@ -221,6 +226,7 @@ export function AnalysisWorkbench() {
 
   const runAnalysis = async () => {
     setLoading(true);
+    setAnalysisStatus("Deine Angaben werden geprüft und die Finanzierung berechnet.");
     setErrors([]);
     setCloudStatus("");
     try {
@@ -252,9 +258,11 @@ export function AnalysisWorkbench() {
       };
       saveLocalAnalysis(saved);
       clearAnalysisDraft();
+      setAnalysisStatus("Analyse fertig. Deine Ergebnisse sind gespeichert.");
       window.setTimeout(() => document.getElementById("ergebnis")?.scrollIntoView({ behavior: "smooth" }), 50);
     } catch {
       setErrors([{ message: "Die Analyse konnte nicht gestartet werden." }]);
+      setAnalysisStatus("Die Analyse konnte nicht abgeschlossen werden.");
     } finally {
       setLoading(false);
     }
@@ -389,6 +397,7 @@ export function AnalysisWorkbench() {
         </nav>
         {step === 1 ? <>
         <UrlImporter
+  initialUrl={initialSourceUrl}
   onImported={(
     imported: ImportedProperty
   ) => {
@@ -561,6 +570,8 @@ export function AnalysisWorkbench() {
             </ul>
           </section>
         ) : null}
+
+        {analysisStatus ? <p aria-live="polite" className="rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4 text-sm font-medium text-emerald-900">{analysisStatus}</p> : null}
 
         <div className="sticky bottom-4 z-20 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur">
           <button type="button" onClick={() => setStep((current) => Math.max(1, current - 1))} disabled={step === 1} className="rounded-xl px-5 py-3 font-bold text-slate-700 disabled:opacity-30">Zurück</button>

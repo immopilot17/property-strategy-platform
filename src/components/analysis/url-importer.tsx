@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   PropertyProfile
 } from "@/features/analysis/domain";
@@ -19,20 +19,23 @@ type UrlImportResponse = {
 };
 
 export function UrlImporter({
-  onImported
+  onImported,
+  initialUrl
 }: {
   onImported: (
     property: ImportedProperty
   ) => void;
+  initialUrl?: string;
 }) {
   const [url, setUrl] = useState("");
+  const hasImportedInitialUrl = useRef(false);
   const [status, setStatus] = useState("");
   const [warnings, setWarnings] =
     useState<string[]>([]);
   const [loading, setLoading] =
     useState(false);
 
-  const importUrl = async () => {
+  const importUrl = async (urlToImport = url) => {
     setLoading(true);
     setStatus("Immobilienseite wird gelesen …");
     setWarnings([]);
@@ -45,7 +48,7 @@ export function UrlImporter({
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ url })
+          body: JSON.stringify({ url: urlToImport })
         }
       );
 
@@ -75,6 +78,13 @@ export function UrlImporter({
     }
   };
 
+  useEffect(() => {
+    if (!initialUrl || hasImportedInitialUrl.current) return;
+    hasImportedInitialUrl.current = true;
+    setUrl(initialUrl);
+    void importUrl(initialUrl);
+  }, [initialUrl]);
+
   return (
     <section className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6">
       <h2 className="text-xl font-bold">
@@ -100,7 +110,7 @@ export function UrlImporter({
 
         <button
           type="button"
-          onClick={importUrl}
+          onClick={() => void importUrl()}
           disabled={
             loading ||
             !url.startsWith("http")

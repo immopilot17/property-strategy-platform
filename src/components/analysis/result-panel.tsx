@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { AnalysisInput, FullAnalysisResult, RiskLevel, StrategyType } from "@/features/analysis/domain";
 import type { AnalysisAgentFinding, SupervisorResult } from "@/modules/agents/agent-types";
-import { FundingIntelligence } from "./funding-intelligence";
+import { FundingIntelligence, type FundingResponse } from "./funding-intelligence";
 import { hasTier, type AccessTier } from "@/features/payments/packages";
 
 const eur = (value: number) =>
@@ -124,7 +124,9 @@ export function ResultPanel({
   input: AnalysisInput;
 }) {
   const [accessTier, setAccessTier] = useState<AccessTier>("free");
-  useEffect(() => { fetch("/api/payments/entitlements").then((response) => response.json()).then((data: { tier?: AccessTier }) => setAccessTier(data.tier ?? "free")).catch(() => setAccessTier("free")); }, []);
+  const [fundingData, setFundingData] = useState<FundingResponse | null>(null);
+  const [tokenBalance, setTokenBalance] = useState(0);
+  useEffect(() => { fetch("/api/payments/entitlements").then((response) => response.json()).then((data: { tier?: AccessTier; tokenBalance?: number }) => { setAccessTier(data.tier ?? "free"); setTokenBalance(data.tokenBalance ?? 0); }).catch(() => setAccessTier("free")); }, []);
   const recommended = result.strategies.find(
     (strategy) => strategy.type === result.recommendedStrategyType
   );
@@ -313,16 +315,16 @@ export function ResultPanel({
           <p className="mt-5 text-xs leading-5 text-slate-500">{result.tax.disclaimer}</p>
         </article>
 
-        {hasTier(accessTier, "plus") ? <FundingIntelligence input={input} /> : null}
+        {hasTier(accessTier, "plus") ? <FundingIntelligence input={input} onLoaded={setFundingData} /> : null}
       </section>
-      : hasTier(accessTier, "plus") ? <FundingIntelligence input={input} /> : <Upgrade title="Förderung und steuerliche Orientierung" tier="Finanzierung oder Strategie" />}
+      : hasTier(accessTier, "plus") ? <FundingIntelligence input={input} onLoaded={setFundingData} /> : <Upgrade title="Förderung und steuerliche Orientierung" tier="Finanzierung oder Strategie" />}
 
       {hasTier(accessTier, "starter") ? <section className="rounded-3xl bg-slate-950 p-7 text-white">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <h2 className="text-2xl font-bold">KI-Erklärung und Cloudspeicherung</h2>
             <p className="mt-2 max-w-3xl leading-7 text-slate-300">
-              Die Berechnungen sind deterministisch. Die KI wird nur auf Knopfdruck für eine verständliche Erklärung verwendet.
+              Die Berechnungen sind deterministisch. KI-Erklärungen und Chat werden transparent aus deinem API-Tokenbudget abgerechnet. Verfügbar: {new Intl.NumberFormat("de-DE").format(tokenBalance)} Tokens.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -334,7 +336,7 @@ export function ResultPanel({
             >
               {aiLoading ? "KI wertet aus…" : "KI-Erklärung erstellen"}
             </button>
-            {hasTier(accessTier, "premium") ? <button type="button" onClick={() => { sessionStorage.setItem("property-strategy-report", JSON.stringify({ input, result, aiSummary })); window.open("/analyse/bericht", "_blank", "noopener,noreferrer"); }} className="rounded-xl border border-emerald-400 px-4 py-3 font-bold text-emerald-300">PDF-Bericht erstellen</button> : null}
+            {hasTier(accessTier, "premium") ? <button type="button" onClick={() => { sessionStorage.setItem("property-strategy-report", JSON.stringify({ input, result, aiSummary, fundingData })); window.open("/analyse/bericht", "_blank", "noopener,noreferrer"); }} className="rounded-xl border border-emerald-400 px-4 py-3 font-bold text-emerald-300">Gesamtbericht als PDF</button> : null}
             <button
               type="button"
               onClick={onCloudSave}

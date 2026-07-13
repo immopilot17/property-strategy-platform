@@ -3,13 +3,13 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function PaymentsPage() {
-  if (!isSupabaseConfigured()) return <PaymentPackages signedIn={false} credits={0} />;
+  if (!isSupabaseConfigured()) return <PaymentPackages signedIn={false} tokenBalance={0} />;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  let credits = 0;
+  let tokenBalance = 0;
   if (user) {
-    const { data } = await supabase.from("analysis_credits").select("credits").eq("user_id", user.id).maybeSingle();
-    credits = data?.credits ?? 0;
+    const { data } = await supabase.from("analysis_credits").select("token_balance").eq("user_id", user.id).maybeSingle();
+    tokenBalance = Number(data?.token_balance ?? 0);
   }
-  return <PaymentPackages signedIn={Boolean(user)} credits={credits} />;
+  return <PaymentPackages signedIn={Boolean(user)} tokenBalance={tokenBalance} />;
 }

@@ -20,13 +20,13 @@ export async function POST(request: Request) {
     client_reference_id: user.id,
     success_url: `${origin}/dashboard/zahlungen?status=success`,
     cancel_url: `${origin}/dashboard/zahlungen?status=cancelled`,
-    metadata: { userId: user.id, packageCode: selected.code, credits: String(selected.credits) },
+    metadata: { userId: user.id, packageCode: selected.code, credits: String(selected.credits), tokens: String(selected.tokenAllowance) },
     line_items: [{
       quantity: 1,
       price_data: {
         currency: "eur",
         unit_amount: selected.priceCents,
-        product_data: { name: `${selected.name} – ${selected.credits} Analyse-Credits` }
+        product_data: { name: `${selected.name} – ${selected.tokenAllowance.toLocaleString("de-DE")} API-Tokens` }
       }
     }]
   });

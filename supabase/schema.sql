@@ -81,9 +81,28 @@ create table if not exists public.analysis_credits (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   credits integer not null default 0,
+  token_balance bigint not null default 0,
+  tokens_used bigint not null default 0,
   updated_at timestamptz not null default now(),
   unique(user_id)
 );
+
+create table if not exists public.api_usage_events (
+  id uuid primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  feature text not null,
+  model text not null,
+  reserved_tokens bigint not null check (reserved_tokens > 0),
+  input_tokens bigint not null default 0 check (input_tokens >= 0),
+  output_tokens bigint not null default 0 check (output_tokens >= 0),
+  total_tokens bigint not null default 0 check (total_tokens >= 0),
+  status text not null default 'reserved' check (status in ('reserved', 'completed', 'failed')),
+  created_at timestamptz not null default now(),
+  completed_at timestamptz
+);
+
+create index if not exists api_usage_events_user_created_idx
+  on public.api_usage_events (user_id, created_at desc);
 
 create table if not exists public.payments (
   id uuid primary key default gen_random_uuid(),
@@ -97,6 +116,9 @@ create table if not exists public.payments (
   credits integer not null default 0,
   created_at timestamptz not null default now()
 );
+
+create index if not exists payments_user_id_idx
+  on public.payments (user_id);
 
 create table if not exists public.funding_program_versions (
   id uuid primary key default gen_random_uuid(),
@@ -120,6 +142,7 @@ alter table public.financial_profiles enable row level security;
 alter table public.properties enable row level security;
 alter table public.analyses enable row level security;
 alter table public.analysis_credits enable row level security;
+alter table public.api_usage_events enable row level security;
 alter table public.payments enable row level security;
 alter table public.funding_program_versions enable row level security;
 
@@ -146,6 +169,14 @@ with check (auth.uid() = user_id);
 create policy "credits_owner_select"
 on public.analysis_credits for select
 using (auth.uid() = user_id);
+
+create policy "api_usage_owner_select"
+on public.api_usage_events for select
+to authenticated
+using ((select auth.uid()) = user_id);
+
+grant select on table public.api_usage_events to authenticated;
+grant select, insert, update, delete on table public.api_usage_events to service_role;
 
 create policy "payments_owner_select"
 on public.payments for select

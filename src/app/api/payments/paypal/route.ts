@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       intent: "CAPTURE",
       purchase_units: [{
         custom_id: `${user.id}|${selected.code}|${selected.credits}`,
-        description: `${selected.name} – ${selected.credits} Analyse-Credits`,
+        description: `${selected.name} – ${selected.tokenAllowance.toLocaleString("de-DE")} API-Tokens`,
         amount: { currency_code: "EUR", value: (selected.priceCents / 100).toFixed(2) }
       }],
       payment_source: { paypal: { experience_context: {

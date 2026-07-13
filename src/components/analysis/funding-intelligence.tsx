@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import type { AnalysisInput } from "@/features/analysis/domain";
 import type { FundingMatch } from "@/features/funding/agent";
 
-type FundingResponse = {
+export type FundingResponse = {
   matches: FundingMatch[];
   supervisor: { summary: string; conflicts: string[]; warning: string };
 };
 
 const eur = (value: number) => value.toLocaleString("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 
-export function FundingIntelligence({ input }: { input: AnalysisInput }) {
+export function FundingIntelligence({ input, onLoaded }: { input: AnalysisInput; onLoaded?: (data: FundingResponse) => void }) {
   const [data, setData] = useState<FundingResponse | null>(null);
   const [message, setMessage] = useState("Offizielle Förderdaten werden geprüft …");
 
@@ -21,11 +21,11 @@ export function FundingIntelligence({ input }: { input: AnalysisInput }) {
       .then(async (response) => {
         const body = await response.json() as FundingResponse & { message?: string };
         if (!response.ok) throw new Error(body.message ?? "Förderprüfung nicht verfügbar.");
-        if (active) { setData(body); setMessage(""); }
+        if (active) { setData(body); setMessage(""); onLoaded?.(body); }
       })
       .catch((error) => active && setMessage(error instanceof Error ? error.message : "Förderprüfung nicht verfügbar."));
     return () => { active = false; };
-  }, [input]);
+  }, [input, onLoaded]);
 
   return <article id="foerderungen" className="rounded-3xl border border-slate-200 bg-white p-6">
     <h2 className="text-xl font-bold">Aktuelle Förderprüfung</h2>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { AnalysisInput, FullAnalysisResult, RiskLevel, StrategyType } from "@/features/analysis/domain";
+import type { AnalysisAgentFinding, SupervisorResult } from "@/modules/agents/agent-types";
 import { FundingIntelligence } from "./funding-intelligence";
 import { hasTier, type AccessTier } from "@/features/payments/packages";
 
@@ -61,6 +62,42 @@ function FundingInfo({ count, hasPremium }: { count: number; hasPremium: boolean
         <p className="rounded-2xl bg-white/80 px-4 py-3 text-sm font-semibold text-slate-950">{hasPremium ? "Offizielle Förderprüfung ist aktiviert." : "Für echte Förderprogramme ist das Finanzierungspaket erforderlich."}</p>
       </div>
       <p className="mt-4 text-sm leading-6 text-slate-600">Diese Hinweise basieren auf deinen Objekt- und Finanzierungsdaten. Ergänze Angaben wie Bundesland oder Energieklasse für genauere Ergebnisse.</p>
+    </section>
+  );
+}
+
+function LiveAgentInsights({ supervisor, agentFindings }: { supervisor: SupervisorResult; agentFindings: AnalysisAgentFinding[] }) {
+  return (
+    <section id="ki-agenten" className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">Echtzeit-KI-Agenten</p>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Sofort verfügbare Analyse-Insights</h2>
+          <p className="mt-3 text-sm leading-6 text-slate-600">Agenten prüfen Finanzierung, Objekt, Steuern und Risiken live anhand deiner aktuellen Eingaben.</p>
+        </div>
+        <div className="rounded-2xl bg-white/80 px-4 py-3 text-sm font-semibold text-slate-950">
+          {supervisor.verdict}
+        </div>
+      </div>
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        {agentFindings.slice(0, 4).map((item) => (
+          <article key={item.agent} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="font-bold">{item.facts.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{item.facts.summary}</p>
+              </div>
+              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">{item.facts.score}/100</span>
+            </div>
+            {item.warnings.length ? (
+              <div className="mt-4 space-y-2 rounded-2xl bg-amber-50 p-4 text-sm text-amber-800">
+                {item.warnings.map((warning) => <p key={warning}>⚠️ {warning}</p>)}
+              </div>
+            ) : null}
+          </article>
+        ))}
+      </div>
+      <p className="mt-5 text-sm leading-6 text-slate-600">Für individuelle Erläuterungen kannst du den Assistenten unten rechts öffnen und direkte Fragen zur Analyse stellen.</p>
     </section>
   );
 }
@@ -127,6 +164,8 @@ export function ResultPanel({
           <p className="mt-4 text-sm text-slate-600">Nach Ablauf der Zinsbindung könnte die Rate bei einem erwarteten Anschlusszins von {result.financing.projectedAnnualInterestRateAfterFixedPeriodPercent.toFixed(2)} % auf etwa {eur(result.financing.projectedMonthlyLoanRateAfterFixedPeriod)} steigen.</p>
         ) : null}
       </section>
+
+      {result.agentFindings.length ? <LiveAgentInsights supervisor={result.supervisor} agentFindings={result.agentFindings} /> : null}
 
       {result.fundingSuggestions.length ? <FundingInfo count={fundingCount} hasPremium={hasFundingPremium} /> : null}
 

@@ -10,7 +10,7 @@ export function Chatbot() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([{ role: "assistant", content: "Hallo! Ich helfe dir bei Fragen zur Immobilienanalyse, Finanzierung, Förderung und steuerlichen Orientierung." }]);
+  const [messages, setMessages] = useState<Message[]>([{ role: "assistant", content: "Hallo! Ich helfe dir bei Fragen zur Immobilienanalyse, Finanzierung, Förderung und steuerlichen Orientierung. Nutze mich für Echtzeit-Insights zur aktuellen Analyse." }]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();

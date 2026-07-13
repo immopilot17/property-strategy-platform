@@ -182,9 +182,10 @@ create policy "payments_owner_select"
 on public.payments for select
 using (auth.uid() = user_id);
 
-create policy "funding_programs_public_read"
-on public.funding_program_versions for select
-using (true);
+drop policy if exists "funding_programs_public_read" on public.funding_program_versions;
+
+revoke all on table public.funding_program_versions from anon, authenticated;
+grant select, insert on table public.funding_program_versions to service_role;
 
 create or replace view public.current_funding_programs
 with (security_invoker = true)
@@ -195,3 +196,6 @@ select distinct on (provider_id, program_id)
 from public.funding_program_versions
 where (valid_until is null or valid_until >= current_date)
 order by provider_id, program_id, fetched_at desc;
+
+revoke all on table public.current_funding_programs from anon, authenticated;
+grant select on table public.current_funding_programs to service_role;

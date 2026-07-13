@@ -84,12 +84,30 @@ export function calculateFinancing(
   );
 
   const requiredLoanAmount = Math.max(0, financedBase - equityAppliedToFinancedAmount);
+  const monthlySpecialRepayment = roundMoney(requiredLoanAmount * financing.annualSpecialRepaymentPercent / 100 / 12);
   const baseRate = calculateMonthlyLoanRate(
     requiredLoanAmount,
     financing.annualInterestRatePercent,
     financing.initialRepaymentPercent
   );
-  const monthlyLoanRate = baseRate + financing.additionalMonthlyPayment;
+  const monthlyLoanRate = baseRate + financing.additionalMonthlyPayment + monthlySpecialRepayment;
+
+  const remainingDebtAfterFixedPeriod = calculateRemainingDebt(
+    requiredLoanAmount,
+    financing.annualInterestRatePercent,
+    monthlyLoanRate,
+    financing.fixedInterestYears
+  );
+
+  const remainingTermYears = Math.max(0, financing.totalTermYears - financing.fixedInterestYears);
+  const projectedAnnualInterestRateAfterFixedPeriodPercent = financing.expectedInterestAfterFixedPeriodPercent ?? financing.annualInterestRatePercent;
+  const projectedMonthlyLoanRateAfterFixedPeriod = remainingTermYears > 0
+    ? calculateMonthlyLoanRate(
+        remainingDebtAfterFixedPeriod,
+        projectedAnnualInterestRateAfterFixedPeriodPercent,
+        financing.initialRepaymentPercent
+      )
+    : 0;
 
   return {
     totalPurchaseCosts: costs.totalPurchaseCosts,
@@ -98,13 +116,11 @@ export function calculateFinancing(
     equityAppliedToFinancedAmount: roundMoney(equityAppliedToFinancedAmount),
     requiredLoanAmount: roundMoney(requiredLoanAmount),
     monthlyLoanRate: roundMoney(monthlyLoanRate),
+    monthlySpecialRepayment,
     annualLoanRate: roundMoney(monthlyLoanRate * 12),
-    remainingDebtAfterFixedPeriod: calculateRemainingDebt(
-      requiredLoanAmount,
-      financing.annualInterestRatePercent,
-      monthlyLoanRate,
-      financing.fixedInterestYears
-    ),
+    remainingDebtAfterFixedPeriod: roundMoney(remainingDebtAfterFixedPeriod),
+    projectedMonthlyLoanRateAfterFixedPeriod: roundMoney(projectedMonthlyLoanRateAfterFixedPeriod),
+    projectedAnnualInterestRateAfterFixedPeriodPercent: roundMoney(projectedAnnualInterestRateAfterFixedPeriodPercent),
     loanToValuePercent: roundPercent(percent(requiredLoanAmount, property.purchasePrice))
   };
 }
@@ -240,8 +256,73 @@ export function calculateTaxEstimate(
 }
 
 export function createFundingSuggestions(input: AnalysisInput): FundingSuggestion[] {
-  void input;
-  return [];
+  if (!input.settings.calculateSubsidyScenario) {
+    return [];
+  }
+
+  const suggestions: FundingSuggestion[] = [];
+  const hasFederalState = Boolean(input.property.address.federalState?.trim());
+  const isInvestment = input.user.purchaseGoal === "capital_investment" || input.user.purchaseGoal === "mixed_use";
+
+  function addSuggestion(id: string, title: string, reason: string, status: FundingSuggestion["status"] = "potentially_relevant") {
+    suggestions.push({ id, title, reason, status });
+  }
+
+  if (input.property.energeticRenovationPlanned) {
+    addSuggestion(
+      "energy-renovation",
+      "Energieeffiziente Renovierung prüfen",
+      "Für energetische Modernisierung gibt es häufig zinsgünstige Kredite und Zuschüsse, beispielsweise über KfW oder BAFA.",
+      hasFederalState ? "potentially_relevant" : "needs_current_verification"
+    );
+  }
+
+  if (input.property.projectType === "new_build") {
+    addSuggestion(
+      "new-build",
+      "Förderung für Neubau recherchieren",
+      "Neubauprojekte können von speziellen Förderdarlehen und Baukindergeld profitieren.",
+      hasFederalState ? "potentially_relevant" : "needs_current_verification"
+    );
+  }
+
+  if (input.property.firstPurchase) {
+    addSuggestion(
+      "first-purchase",
+      "Erstkäufer-Förderung prüfen",
+      "Erstkäufer können in vielen Regionen Zugang zu vergünstigten Konditionen oder zusätzlichen Fördermitteln haben.",
+      "potentially_relevant"
+    );
+  }
+
+  if (isInvestment && input.property.occupancyType === "fully_rented") {
+    addSuggestion(
+      "investment-subsidy",
+      "Investitionsförderung bei Vermietung berücksichtigen",
+      "Bei Anlageimmobilien lohnt sich die Prüfung von Förderprogrammen, die energetische Maßnahmen und Mietausfallrisiken entlasten.",
+      "potentially_relevant"
+    );
+  }
+
+  if (input.user.desiredRemainingReserve > input.user.availableEquity * 0.5) {
+    addSuggestion(
+      "reserve-pressure",
+      "Reservebedarf mit Förderkonditionen abgleichen",
+      "Ein hoher gewünschter Liquiditätspuffer kann durch günstige Förderdarlehen oder Tilgungszuschüsse unterstützt werden.",
+      "needs_current_verification"
+    );
+  }
+
+  if (!hasFederalState) {
+    addSuggestion(
+      "state-missing",
+      "Bundesland für Förderprüfung ergänzen",
+      "Förderprogramme variieren stark nach Bundesland. Ergänze die Angabe, um passende Programme zu finden.",
+      "needs_current_verification"
+    );
+  }
+
+  return suggestions;
 }
 
 export function calculateAnalysis(input: AnalysisInput): CalculationResult {

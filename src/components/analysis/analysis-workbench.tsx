@@ -504,6 +504,7 @@ export function AnalysisWorkbench() {
           <NumberField label="Zinsbindung" value={input.financing.fixedInterestYears} onChange={(v) => updateFinancing("fixedInterestYears", v)} suffix="Jahre" />
           <NumberField label="Gesamtlaufzeit" value={input.financing.totalTermYears} onChange={(v) => updateFinancing("totalTermYears", v)} suffix="Jahre" />
           <NumberField label="Zusätzliche Monatszahlung" value={input.financing.additionalMonthlyPayment} onChange={(v) => updateFinancing("additionalMonthlyPayment", v)} />
+          <NumberField label="Jährliche Sondertilgung" value={input.financing.annualSpecialRepaymentPercent} onChange={(v) => updateFinancing("annualSpecialRepaymentPercent", v)} suffix="%" step="0.01" />
           <NumberField label="Erwarteter Anschlusszins" value={input.financing.expectedInterestAfterFixedPeriodPercent} onChange={(v) => updateFinancing("expectedInterestAfterFixedPeriodPercent", v)} suffix="%" step="0.01" />
           <label className="flex items-center gap-3 rounded-2xl border border-slate-200 p-4">
             <input type="checkbox" checked={input.financing.includePurchaseCostsInLoan} onChange={(e) => updateFinancing("includePurchaseCostsInLoan", e.target.checked)} />
@@ -524,6 +525,10 @@ export function AnalysisWorkbench() {
           <NumberField label="Wertentwicklung jährlich" value={input.settings.annualPropertyValueGrowthPercent} onChange={(v) => updateSettings("annualPropertyValueGrowthPercent", v)} suffix="%" step="0.1" min="-20" />
           <NumberField label="Mietentwicklung jährlich" value={input.settings.annualRentGrowthPercent} onChange={(v) => updateSettings("annualRentGrowthPercent", v)} suffix="%" step="0.1" min="-20" />
           <NumberField label="Kostensteigerung jährlich" value={input.settings.annualCostGrowthPercent} onChange={(v) => updateSettings("annualCostGrowthPercent", v)} suffix="%" step="0.1" min="-20" />
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 p-4">
+            <input type="checkbox" checked={input.settings.calculateSubsidyScenario} onChange={(e) => updateSettings("calculateSubsidyScenario", e.target.checked)} />
+            <span className="font-semibold">Förderhinweise aktiv berechnen</span>
+          </label>
         </Section>
         ) : null}
 

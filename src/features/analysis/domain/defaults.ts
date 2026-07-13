@@ -37,7 +37,7 @@ export const defaultUserProfile: UserProfile = {
 };
 
 export const defaultPropertyProfile: PropertyProfile = {
-  title: "Beispielimmobilie",
+  title: "Neue Immobilie",
   sourceUrl: undefined,
   propertyType: "apartment",
   condition: "good",

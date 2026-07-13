@@ -34,3 +34,5 @@ Desktop.ini
 next-env.d.ts.next/
 .update-backup-*/
 property-strategy-platform-update/
+.vercel
+.env*

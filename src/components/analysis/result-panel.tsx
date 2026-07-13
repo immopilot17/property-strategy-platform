@@ -49,7 +49,22 @@ function Metric({ label, value, note }: { label: string; value: string; note?: s
     </article>
   );
 }
-
+  
+function FundingInfo({ count, hasPremium }: { count: number; hasPremium: boolean }) {
+  return (
+    <section className="rounded-3xl border border-emerald-100 bg-emerald-50 p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">Förderprüfung</p>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">{count} mögliche Förderhinweise</h2>
+        </div>
+        <p className="rounded-2xl bg-white/80 px-4 py-3 text-sm font-semibold text-slate-950">{hasPremium ? "Offizielle Förderprüfung ist aktiviert." : "Für echte Förderprogramme ist das Finanzierungspaket erforderlich."}</p>
+      </div>
+      <p className="mt-4 text-sm leading-6 text-slate-600">Diese Hinweise basieren auf deinen Objekt- und Finanzierungsdaten. Ergänze Angaben wie Bundesland oder Energieklasse für genauere Ergebnisse.</p>
+    </section>
+  );
+}
+  
 function Upgrade({ title, tier }: { title: string; tier: string }) {
   return <section className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6"><h2 className="text-xl font-bold">{title}</h2><p className="mt-2 text-sm leading-6 text-slate-600">Diese vertiefende Auswertung gehört zum Paket {tier}. Die grundlegende Immobilienanalyse bleibt kostenlos.</p><Link href="/dashboard/zahlungen" className="mt-4 inline-block rounded-xl bg-slate-950 px-4 py-3 font-bold text-white">Pakete vergleichen</Link></section>;
 }
@@ -76,6 +91,9 @@ export function ResultPanel({
   const recommended = result.strategies.find(
     (strategy) => strategy.type === result.recommendedStrategyType
   );
+
+  const fundingCount = result.fundingSuggestions.length;
+  const hasFundingPremium = hasTier(accessTier, "plus");
 
   return (
     <div id="ergebnis" className="space-y-10">
@@ -109,6 +127,8 @@ export function ResultPanel({
           <p className="mt-4 text-sm text-slate-600">Nach Ablauf der Zinsbindung könnte die Rate bei einem erwarteten Anschlusszins von {result.financing.projectedAnnualInterestRateAfterFixedPeriodPercent.toFixed(2)} % auf etwa {eur(result.financing.projectedMonthlyLoanRateAfterFixedPeriod)} steigen.</p>
         ) : null}
       </section>
+
+      {result.fundingSuggestions.length ? <FundingInfo count={fundingCount} hasPremium={hasFundingPremium} /> : null}
 
       <section id="risiken">
         <h2 className="text-2xl font-bold">Erkannte Risiken</h2>

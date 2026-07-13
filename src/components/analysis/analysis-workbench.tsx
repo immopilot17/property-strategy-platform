@@ -529,6 +529,7 @@ export function AnalysisWorkbench() {
             <input type="checkbox" checked={input.settings.calculateSubsidyScenario} onChange={(e) => updateSettings("calculateSubsidyScenario", e.target.checked)} />
             <span className="font-semibold">Förderhinweise aktiv berechnen</span>
           </label>
+          <p className="mt-3 text-sm leading-6 text-slate-600">Mit aktivierter Förderprüfung erhalten Sie gezielte Hinweise auf mögliche Programme. Für die aktuelle Abfrage von offiziellen Förderprogrammen ist das Finanzierungspaket erforderlich.</p>
         </Section>
         ) : null}
 

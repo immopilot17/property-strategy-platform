@@ -43,7 +43,8 @@ export abstract class OfficialWebProvider implements FundingProvider {
     const $ = cheerio.load(await response.text());
     $("script,style,noscript,nav,footer").remove();
     const title = $("h1").first().text().replace(/\s+/g, " ").trim() || $("title").text().trim();
-    const text = $("main").text().replace(/\s+/g, " ").trim() || $("body").text().replace(/\s+/g, " ").trim();
+    const extractedText = $("main").text().replace(/\s+/g, " ").trim() || $("body").text().replace(/\s+/g, " ").trim();
+    const text = extractedText.replace(/\s+Weitere Förderprogramme\s+Das könnte Sie auch interessieren:.*$/i, "").trim();
     return { providerId: this.id, sourceUrl: url.toString(), fetchedAt: new Date().toISOString(), title, text: text.slice(0, 120000), checksum: createHash("sha256").update(text).digest("hex") };
   }
 }

@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       "Keine Rechts-, Steuer- oder Finanzberatung vortäuschen. Keine Zahlen erfinden.",
       JSON.stringify(body)
     ].join("\n\n");
-    const model = process.env.OPENAI_MODEL ?? "gpt-5-mini";
+    const model = process.env.OPENAI_MODEL ?? "gpt-4-turbo";
     const reservation = await reserveApiUsage({ requiredTier: "starter", feature: "analysis_explanation", model, input: prompt, maxOutputTokens: 1200 });
     if (!reservation.ok) return Response.json({ ok: false, message: reservation.message }, { status: reservation.status });
 
@@ -35,20 +35,28 @@ export async function POST(request: Request) {
       const data: unknown = await response.json();
       if (!response.ok) {
         await releaseApiUsage(reservation);
+        console.error("explain.api.response-error", `Status: ${response.status}`);
         return Response.json({ ok: false, configured: true, message: "KI-Auswertung ist fehlgeschlagen." }, { status: response.status });
       }
       const explanation = extractOpenAIOutputText(data);
       if (!explanation) {
         await releaseApiUsage(reservation);
+        console.error("explain.api.no-text", "OpenAI returned no text content");
         return Response.json({ ok: false, configured: true, message: "Die KI hat keinen auswertbaren Text geliefert." }, { status: 502 });
       }
       const tokenBalance = await settleApiUsage(reservation, extractOpenAIUsage(data));
       return Response.json({ ok: true, explanation, tokenBalance });
-    } catch {
+    } catch (error) {
       await releaseApiUsage(reservation);
+      console.error("explain.api.fetch-error", error instanceof Error ? error.message : String(error));
       return Response.json({ ok: false, configured: true, message: "KI-Auswertung ist fehlgeschlagen." }, { status: 502 });
     }
-  } catch {
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      console.error("explain.api.parse-error", error.message);
+    } else {
+      console.error("explain.api.validation-error", error instanceof Error ? error.message : String(error));
+    }
     return Response.json({ ok: false, configured: true, message: "Ungültige Anfrage für die KI-Auswertung." }, { status: 400 });
   }
 }

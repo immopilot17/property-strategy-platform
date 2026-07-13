@@ -1,31 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { AnalysisInput, FullAnalysisResult, RiskLevel, StrategyType } from "@/features/analysis/domain";
-import type { AnalysisAgentFinding, SupervisorResult } from "@/modules/agents/agent-types";
-import { FundingIntelligence, type FundingResponse } from "./funding-intelligence";
+import { useEffect, useState } from "react";
+import { ArrowRight, Bot, Database, Download, ExternalLink, FileCheck2, Sparkles } from "lucide-react";
+import type { AnalysisInput, FullAnalysisResult, RiskLevel } from "@/features/analysis/domain";
 import { hasTier, type AccessTier } from "@/features/payments/packages";
+import { Button, ButtonLink } from "@/components/ui/button";
+import { Disclosure } from "@/components/ui/disclosure";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { FundingIntelligence, type FundingResponse } from "./funding-intelligence";
 
-const eur = (value: number) =>
-  new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 0
-  }).format(value);
+const eur = (value: number) => new Intl.NumberFormat("de-DE", {
+  style: "currency",
+  currency: "EUR",
+  maximumFractionDigits: 0
+}).format(value);
 
-const pct = (value: number) =>
-  new Intl.NumberFormat("de-DE", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 2
-  }).format(value) + " %";
-
-const riskClass: Record<RiskLevel, string> = {
-  low: "border-emerald-200 bg-emerald-50 text-emerald-950",
-  medium: "border-amber-200 bg-amber-50 text-amber-950",
-  high: "border-orange-200 bg-orange-50 text-orange-950",
-  critical: "border-red-200 bg-red-50 text-red-950"
-};
+const pct = (value: number) => new Intl.NumberFormat("de-DE", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 2
+}).format(value) + " %";
 
 const riskLabel: Record<RiskLevel, string> = {
   low: "Niedrig",
@@ -34,76 +28,47 @@ const riskLabel: Record<RiskLevel, string> = {
   critical: "Kritisch"
 };
 
-const strategyClass: Record<StrategyType, string> = {
-  safe: "border-emerald-200 bg-emerald-50",
-  balanced: "border-blue-200 bg-blue-50",
-  maximum: "border-orange-200 bg-orange-50",
-  alternative: "border-violet-200 bg-violet-50"
+const decisionStatus: Record<RiskLevel, {
+  label: string;
+  tone: "positive" | "caution" | "negative";
+  panel: string;
+}> = {
+  low: { label: "Empfehlenswert", tone: "positive", panel: "border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40" },
+  medium: { label: "Mit Vorsicht", tone: "caution", panel: "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40" },
+  high: { label: "Nicht empfehlenswert", tone: "negative", panel: "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40" },
+  critical: { label: "Nicht empfehlenswert", tone: "negative", panel: "border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950/50" }
 };
+
+const confidenceLabel = { low: "Niedrig", medium: "Mittel", high: "Hoch" } as const;
 
 function Metric({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-sm font-medium text-slate-500">{label}</p>
-      <p className="mt-2 text-2xl font-bold text-slate-950">{value}</p>
-      {note ? <p className="mt-2 text-xs leading-5 text-slate-500">{note}</p> : null}
-    </article>
-  );
-}
-  
-function FundingInfo({ count, hasPremium }: { count: number; hasPremium: boolean }) {
-  return (
-    <section className="rounded-3xl border border-emerald-100 bg-emerald-50 p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">Förderprüfung</p>
-          <h2 className="mt-2 text-2xl font-bold text-slate-950">{count} mögliche Förderhinweise</h2>
-        </div>
-        <p className="rounded-2xl bg-white/80 px-4 py-3 text-sm font-semibold text-slate-950">{hasPremium ? "Offizielle Förderprüfung ist aktiviert." : "Für echte Förderprogramme ist das Finanzierungspaket erforderlich."}</p>
-      </div>
-      <p className="mt-4 text-sm leading-6 text-slate-600">Diese Hinweise basieren auf deinen Objekt- und Finanzierungsdaten. Ergänze Angaben wie Bundesland oder Energieklasse für genauere Ergebnisse.</p>
-    </section>
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-950">
+      <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</dt>
+      <dd className="mt-2 text-2xl font-black tracking-tight text-ink dark:text-white">{value}</dd>
+      {note ? <dd className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{note}</dd> : null}
+    </div>
   );
 }
 
-function LiveAgentInsights({ supervisor, agentFindings }: { supervisor: SupervisorResult; agentFindings: AnalysisAgentFinding[] }) {
+function Upgrade({ title, tier, description }: { title: string; tier: string; description: string }) {
   return (
-    <section id="ki-agenten" className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">Echtzeit-KI-Agenten</p>
-          <h2 className="mt-2 text-2xl font-bold text-slate-950">Sofort verfügbare Analyse-Insights</h2>
-          <p className="mt-3 text-sm leading-6 text-slate-600">Agenten prüfen Finanzierung, Objekt, Steuern und Risiken live anhand deiner aktuellen Eingaben.</p>
-        </div>
-        <div className="rounded-2xl bg-white/80 px-4 py-3 text-sm font-semibold text-slate-950">
-          {supervisor.verdict}
-        </div>
-      </div>
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        {agentFindings.slice(0, 4).map((item) => (
-          <article key={item.agent} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="font-bold">{item.facts.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{item.facts.summary}</p>
-              </div>
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">{item.facts.score}/100</span>
-            </div>
-            {item.warnings.length ? (
-              <div className="mt-4 space-y-2 rounded-2xl bg-amber-50 p-4 text-sm text-amber-800">
-                {item.warnings.map((warning) => <p key={warning}>⚠️ {warning}</p>)}
-              </div>
-            ) : null}
-          </article>
-        ))}
-      </div>
-      <p className="mt-5 text-sm leading-6 text-slate-600">Für individuelle Erläuterungen kannst du den Assistenten unten rechts öffnen und direkte Fragen zur Analyse stellen.</p>
-    </section>
+    <div className="rounded-2xl border border-dashed border-slate-300 bg-cloud p-5 dark:border-slate-700 dark:bg-slate-800/70">
+      <p className="text-xs font-black uppercase tracking-[0.16em] text-teal dark:text-teal-300">Paket {tier}</p>
+      <h3 className="mt-2 text-lg font-bold text-ink dark:text-white">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{description} Die grundlegende Immobilienanalyse bleibt kostenlos.</p>
+      <ButtonLink href="/dashboard/zahlungen" variant="secondary" size="sm" className="mt-4">Pakete vergleichen <ArrowRight size={16} aria-hidden="true" /></ButtonLink>
+    </div>
   );
 }
-  
-function Upgrade({ title, tier }: { title: string; tier: string }) {
-  return <section className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6"><h2 className="text-xl font-bold">{title}</h2><p className="mt-2 text-sm leading-6 text-slate-600">Diese vertiefende Auswertung gehört zum Paket {tier}. Die grundlegende Immobilienanalyse bleibt kostenlos.</p><Link href="/dashboard/zahlungen" className="mt-4 inline-block rounded-xl bg-slate-950 px-4 py-3 font-bold text-white">Pakete vergleichen</Link></section>;
+
+function ResultRow({ label, value, emphasis = false }: { label: string; value: string; emphasis?: boolean }) {
+  return (
+    <div className="flex flex-col gap-1 border-b border-slate-200 py-3 last:border-b-0 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+      <dt className="text-sm text-slate-600 dark:text-slate-300">{label}</dt>
+      <dd className={emphasis ? "font-black text-ink dark:text-white" : "font-bold text-ink dark:text-white"}>{value}</dd>
+    </div>
+  );
 }
 
 export function ResultPanel({
@@ -126,241 +91,258 @@ export function ResultPanel({
   const [accessTier, setAccessTier] = useState<AccessTier>("free");
   const [fundingData, setFundingData] = useState<FundingResponse | null>(null);
   const [tokenBalance, setTokenBalance] = useState(0);
-  useEffect(() => { fetch("/api/payments/entitlements").then((response) => response.json()).then((data: { tier?: AccessTier; tokenBalance?: number }) => { setAccessTier(data.tier ?? "free"); setTokenBalance(data.tokenBalance ?? 0); }).catch(() => setAccessTier("free")); }, []);
-  const recommended = result.strategies.find(
-    (strategy) => strategy.type === result.recommendedStrategyType
-  );
 
-  const fundingCount = result.fundingSuggestions.length;
-  const hasFundingPremium = hasTier(accessTier, "plus");
+  useEffect(() => {
+    fetch("/api/payments/entitlements")
+      .then((response) => response.json())
+      .then((data: { tier?: AccessTier; tokenBalance?: number }) => {
+        setAccessTier(data.tier ?? "free");
+        setTokenBalance(data.tokenBalance ?? 0);
+      })
+      .catch(() => setAccessTier("free"));
+  }, []);
+
+  const decision = decisionStatus[result.overallRiskLevel];
+  const recommended = result.strategies.find((strategy) => strategy.type === result.recommendedStrategyType);
+  const calculatedAt = new Date(result.calculatedAt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+  const handlePdf = () => {
+    sessionStorage.setItem("property-strategy-report", JSON.stringify({ input, result, aiSummary, fundingData }));
+    window.open("/analyse/bericht", "_blank", "noopener,noreferrer");
+  };
 
   return (
-    <div id="ergebnis" className="space-y-10">
-      <section className={`rounded-3xl border p-7 ${riskClass[result.overallRiskLevel]}`}>
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-wide">Gesamtbewertung</p>
-            <h2 className="mt-2 text-3xl font-bold">
-              Risiko {riskLabel[result.overallRiskLevel]}
-            </h2>
-            <p className="mt-4 max-w-3xl leading-7">{result.recommendationSummary}</p>
+    <section id="ergebnis" className="mt-16 scroll-mt-24 border-t border-slate-200 pt-12 dark:border-slate-800" aria-labelledby="result-title">
+      <header className="max-w-3xl">
+        <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal dark:text-teal-300">Dein Ergebnis</p>
+        <h2 id="result-title" className="text-balance mt-2 text-3xl font-black tracking-tight text-ink dark:text-white sm:text-5xl">Was die Zahlen für deine Entscheidung bedeuten.</h2>
+        <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Berechnet am {calculatedAt}</p>
+      </header>
+
+      <div className={`mt-8 rounded-3xl border p-6 sm:p-8 ${decision.panel}`}>
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl">
+            <StatusBadge tone={decision.tone}>{decision.label}</StatusBadge>
+            <h3 className="mt-5 text-2xl font-black tracking-tight text-ink dark:text-white sm:text-3xl">Gesamtbewertung</h3>
+            <p className="mt-4 text-lg leading-8 text-slate-700 dark:text-slate-200">{result.recommendationSummary}</p>
+            {result.supervisor?.verdict ? <p className="mt-4 rounded-2xl bg-white/70 p-4 text-sm leading-6 text-slate-700 dark:bg-slate-950/50 dark:text-slate-200"><strong>Einordnung:</strong> {result.supervisor.verdict}</p> : null}
           </div>
-          <div className="rounded-2xl bg-white/70 px-6 py-4 text-center">
-            <p className="text-sm font-medium">Risikowert</p>
-            <p className="mt-1 text-3xl font-bold">{result.riskScore}/100</p>
+          <div className="shrink-0 rounded-2xl bg-white/80 px-6 py-5 text-center dark:bg-slate-950/60">
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Risikoindikator</p>
+            <p className="mt-1 text-3xl font-black text-ink dark:text-white">{result.riskScore}<span className="text-base font-semibold text-slate-500"> / 100</span></p>
+            <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">{riskLabel[result.overallRiskLevel]}</p>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section>
-        <h2 className="text-2xl font-bold">Kernzahlen</h2>
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Metric label="Gesamtinvestition" value={eur(result.purchaseCosts.totalInvestmentCosts)} />
-          <Metric label="Darlehenssumme" value={eur(result.financing.requiredLoanAmount)} />
-          <Metric label="Monatliche Rate" value={eur(result.financing.monthlyLoanRate)} />
-          <Metric label="Kaufpreis je m²" value={eur(result.profitability.pricePerSquareMeter)} />
-          <Metric label="Verbleibende Liquidität" value={eur(result.affordability.remainingMonthlyLiquidity)} />
-          {result.financing.monthlySpecialRepayment > 0 ? <Metric label="Monatliche Sondertilgung" value={eur(result.financing.monthlySpecialRepayment)} /> : null}
-        </div>
-        {result.financing.projectedMonthlyLoanRateAfterFixedPeriod > 0 ? (
-          <p className="mt-4 text-sm text-slate-600">Nach Ablauf der Zinsbindung könnte die Rate bei einem erwarteten Anschlusszins von {result.financing.projectedAnnualInterestRateAfterFixedPeriodPercent.toFixed(2)} % auf etwa {eur(result.financing.projectedMonthlyLoanRateAfterFixedPeriod)} steigen.</p>
-        ) : null}
-      </section>
+      <dl className="mt-5 grid gap-4 md:grid-cols-3">
+        <Metric label="Gesamtinvestition" value={eur(result.purchaseCosts.totalInvestmentCosts)} note="Kaufpreis, Nebenkosten und Projektkosten" />
+        <Metric label="Monatliche Darlehensrate" value={eur(result.financing.monthlyLoanRate)} note={`Bei ${pct(input.financing.annualInterestRatePercent)} Sollzins`} />
+        <Metric label="Verbleibende Liquidität" value={eur(result.affordability.remainingMonthlyLiquidity)} note="Nach Lebenshaltung, Krediten und Immobilienbelastung" />
+      </dl>
 
-      {result.agentFindings.length ? <LiveAgentInsights supervisor={result.supervisor} agentFindings={result.agentFindings} /> : null}
+      {result.supervisor?.priorityActions.length ? (
+        <section className="mt-8 rounded-3xl bg-ink p-6 text-white sm:p-8" aria-labelledby="next-actions-title">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-teal-200">Deine nächsten Schritte</p>
+          <h3 id="next-actions-title" className="mt-2 text-2xl font-bold">Jetzt sinnvoll weitergehen</h3>
+          <ol className="mt-6 grid gap-3 lg:grid-cols-3">
+            {result.supervisor.priorityActions.slice(0, 3).map((action, index) => (
+              <li key={action} className="flex gap-3 rounded-2xl bg-white/[0.07] p-4 text-sm leading-6 text-slate-200">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-teal text-xs font-black text-white">{index + 1}</span>
+                <span>{action}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
 
-      {result.fundingSuggestions.length ? <FundingInfo count={fundingCount} hasPremium={hasFundingPremium} /> : null}
-
-      <section id="risiken">
-        <h2 className="text-2xl font-bold">Erkannte Risiken</h2>
-        <div className="mt-5 grid gap-4 lg:grid-cols-2">
-          {result.risks.slice(0, 4).map((risk) => (
-            <article key={risk.id} className={`rounded-2xl border p-5 ${riskClass[risk.level]}`}>
-              <div className="flex items-start justify-between gap-4">
-                <h3 className="font-bold">{risk.title}</h3>
-                <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-bold">
-                  {riskLabel[risk.level]}
-                </span>
-              </div>
-              <p className="mt-3 text-sm leading-6">{risk.description}</p>
-              {risk.recommendation ? (
-                <p className="mt-4 rounded-xl bg-white/70 p-3 text-sm leading-6">
-                  <strong>Empfehlung:</strong> {risk.recommendation}
-                </p>
-              ) : null}
-            </article>
-          ))}
-        </div>
-      </section>
-
-      {result.fundingSuggestions.length ? <section id="foerderhinweise">
-        <h2 className="text-2xl font-bold">Förderhinweise</h2>
-        <div className="mt-5 grid gap-4 lg:grid-cols-2">
-          {result.fundingSuggestions.map((suggestion) => (
-            <article key={suggestion.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="font-bold">{suggestion.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">{suggestion.reason}</p>
-                </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-bold ${suggestion.status === "needs_current_verification" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
-                  {suggestion.status === "needs_current_verification" ? "Daten ergänzen" : "Prüfen"}
-                </span>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section> : null}
-
-      {hasTier(accessTier, "plus") ? <section id="strategien">
-        <div>
-          <h2 className="text-2xl font-bold">Finanzierungsstrategien</h2>
-          {recommended ? (
-            <p className="mt-2 text-slate-600">
-              Auf Basis des Risikoprofils bevorzugt: <strong>{recommended.title}</strong>
-            </p>
-          ) : null}
-        </div>
-
-        <div className="mt-5 space-y-5">
-          {result.strategies.map((strategy) => (
-            <article
-              key={strategy.type}
-              className={`rounded-3xl border p-6 ${strategyClass[strategy.type]}`}
-            >
-              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <h3 className="text-xl font-bold">{strategy.title}</h3>
-                  <p className="mt-2 max-w-4xl leading-7 text-slate-700">{strategy.summary}</p>
-                </div>
-                {strategy.type === result.recommendedStrategyType ? (
-                  <span className="w-fit rounded-full bg-slate-950 px-3 py-1 text-xs font-bold text-white">
-                    Bevorzugt
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <Metric label="Eigenkapital" value={eur(strategy.recommendedEquity)} />
-                <Metric label="Darlehen" value={eur(strategy.estimatedLoanAmount)} />
-                <Metric label="Monatsrate" value={eur(strategy.estimatedMonthlyRate)} />
-                <Metric label="Reserve" value={eur(strategy.estimatedRemainingReserve)} />
-              </div>
-
-              <div className="mt-6 grid gap-5 lg:grid-cols-3">
-                <div className="rounded-2xl bg-white/75 p-5">
-                  <h4 className="font-bold">Vorteile</h4>
-                  <ul className="mt-3 space-y-2 text-sm leading-6">
-                    {strategy.advantages.map((item) => <li key={item}>+ {item}</li>)}
-                  </ul>
-                </div>
-                <div className="rounded-2xl bg-white/75 p-5">
-                  <h4 className="font-bold">Nachteile</h4>
-                  <ul className="mt-3 space-y-2 text-sm leading-6">
-                    {strategy.disadvantages.map((item) => <li key={item}>− {item}</li>)}
-                  </ul>
-                </div>
-                <div className="rounded-2xl bg-white/75 p-5">
-                  <h4 className="font-bold">Nächste Schritte</h4>
-                  <ol className="mt-3 space-y-2 text-sm leading-6">
-                    {strategy.nextSteps.map((item, index) => (
-                      <li key={item}>{index + 1}. {item}</li>
-                    ))}
-                  </ol>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section> : <Upgrade title="Finanzierungsalternativen verständlich vergleichen" tier="Finanzierung" />}
-
-      {hasTier(accessTier, "pro") ? <section id="agenten">
-        <h2 className="text-2xl font-bold">Agenten- und Supervisor-Prüfung</h2>
-        {result.supervisor ? <>
-        <div className="mt-5 rounded-3xl bg-slate-950 p-6 text-white">
-          <p className="text-xs font-bold uppercase tracking-wide text-emerald-300">Supervisor</p>
-          <p className="mt-3 text-lg leading-7">{result.supervisor.verdict}</p>
-          <ol className="mt-4 space-y-2 text-sm text-slate-200">{result.supervisor.priorityActions.map((item, index) => <li key={item}>{index + 1}. {item}</li>)}</ol>
-          {result.supervisor.conflicts.map((item) => <p key={item} className="mt-3 rounded-xl bg-amber-400/15 p-3 text-sm text-amber-100">Konflikt: {item}</p>)}
-        </div>
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {(result.agentFindings ?? []).map((item) => (
-            <article key={item.agent} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-3"><h3 className="font-bold">{item.facts.title}</h3><span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">{item.facts.score}/100</span></div>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{item.facts.summary}</p>
-              {item.warnings.map((warning) => <p key={warning} className="mt-3 text-sm font-medium text-amber-700">{warning}</p>)}
-            </article>
-          ))}
-        </div>
-        </> : <p className="mt-4 text-slate-600">Für ältere gespeicherte Analysen bitte die Analyse erneut berechnen.</p>}
-      </section> : <Upgrade title="Persönliche Strategie- und Agentenprüfung" tier="Strategie" />}
-
-      {hasTier(accessTier, "pro") ? <section id="steuer" className="grid gap-5 lg:grid-cols-2">
-        <article className="rounded-3xl border border-slate-200 bg-white p-6">
-          <h2 className="text-xl font-bold">Steuerliche Orientierung</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            {result.tax.assessmentType === "joint" ? "Gemeinsamer Kauf" : "Kauf allein"} · {result.tax.useType === "owner_occupation" ? "Eigennutzung" : result.tax.useType === "capital_investment" ? "Kapitalanlage" : "Gemischte Nutzung"} · Schätzung
-          </p>
-          {result.tax.enabled ? (
-            <div className="mt-4 space-y-3">
-              <p>Geschätzte Zinsen im ersten Jahr: <strong>{eur(result.tax.annualInterestEstimate)}</strong></p>
-              <p>Geschätzte AfA: <strong>{eur(result.tax.annualDepreciationEstimate)}</strong></p>
-              <p>Geschätzte Werbungskosten: <strong>{eur(result.tax.annualAdvertisingCostsEstimate)}</strong></p>
-              <p>Geschätztes steuerliches Vermietungsergebnis: <strong>{eur(result.tax.estimatedTaxableRentalResult)}</strong></p>
-              <p>Orientierender Steuereffekt: <strong>{eur(result.tax.estimatedAnnualTaxEffect)}</strong></p>
+      <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-700 dark:bg-slate-900" aria-label="Analyse-Details">
+        <Disclosure title="Finanzierung und Cashflow" description="Kaufkosten, Darlehen, Rate und laufende Tragbarkeit">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div>
+              <h3 className="font-bold text-ink dark:text-white">Kauf und Finanzierung</h3>
+              <dl className="mt-2">
+                <ResultRow label="Kaufpreis" value={eur(result.purchaseCosts.purchasePrice)} />
+                <ResultRow label="Kaufnebenkosten" value={eur(result.purchaseCosts.totalPurchaseCosts)} />
+                <ResultRow label="Projektkosten" value={eur(result.purchaseCosts.totalProjectCosts)} />
+                <ResultRow label="Benötigtes Darlehen" value={eur(result.financing.requiredLoanAmount)} emphasis />
+                <ResultRow label="Restschuld nach Zinsbindung" value={eur(result.financing.remainingDebtAfterFixedPeriod)} />
+              </dl>
             </div>
-          ) : (
-            <p className="mt-4 text-slate-600">Für diese Nutzung wurde keine Vermietungs-Steuerschätzung berechnet.</p>
-          )}
-          <p className="mt-5 text-xs leading-5 text-slate-500">{result.tax.disclaimer}</p>
-        </article>
+            <div>
+              <h3 className="font-bold text-ink dark:text-white">Monatliche Einordnung</h3>
+              <dl className="mt-2">
+                <ResultRow label="Haushaltseinkommen gesamt" value={eur(result.affordability.totalMonthlyIncome)} />
+                <ResultRow label="Bestehende Kreditraten gesamt" value={eur(result.affordability.totalExistingLoanPayments)} />
+                <ResultRow label="Persönliche Immobilienbelastung" value={eur(result.affordability.personalMonthlyPropertyBurden)} />
+                <ResultRow label="Schuldendienstquote" value={pct(result.affordability.debtServiceRatioPercent)} />
+                <ResultRow label="Verbleibende Liquidität" value={eur(result.affordability.remainingMonthlyLiquidity)} emphasis />
+              </dl>
+            </div>
+          </div>
+          {result.financing.projectedMonthlyLoanRateAfterFixedPeriod > 0 ? (
+            <p className="mt-5 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 dark:bg-amber-950/50 dark:text-amber-100">Bei einem geschätzten Anschlusszins von {pct(result.financing.projectedAnnualInterestRateAfterFixedPeriodPercent)} könnte die monatliche Rate nach der Zinsbindung etwa {eur(result.financing.projectedMonthlyLoanRateAfterFixedPeriod)} betragen.</p>
+          ) : null}
+          {input.user.purchaseGoal !== "owner_occupation" ? (
+            <div className="mt-6 border-t border-slate-200 pt-5 dark:border-slate-700">
+              <h3 className="font-bold text-ink dark:text-white">Vermietung und Cashflow</h3>
+              <dl className="mt-2 grid gap-x-8 lg:grid-cols-2">
+                <ResultRow label="Bruttomietrendite" value={pct(result.profitability.grossRentalYieldPercent)} />
+                <ResultRow label="Nettomietrendite" value={pct(result.profitability.netRentalYieldPercent)} />
+                <ResultRow label="Monatlicher Cashflow vor Steuern" value={eur(result.profitability.monthlyCashflowBeforeTax)} emphasis />
+                <ResultRow label="Kaufpreis pro m²" value={eur(result.profitability.pricePerSquareMeter)} />
+              </dl>
+            </div>
+          ) : null}
+        </Disclosure>
 
-        {hasTier(accessTier, "plus") ? <FundingIntelligence input={input} onLoaded={setFundingData} /> : null}
+        <Disclosure id="risiken" title="Risiken" description={`${result.risks.length} Hinweise – zuerst die wichtigsten prüfen`}>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {result.risks.map((risk) => {
+              const status = decisionStatus[risk.level];
+              return (
+                <article key={risk.id} className={`rounded-2xl border p-5 ${status.panel}`}>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <h3 className="font-bold text-ink dark:text-white">{risk.title}</h3>
+                    <StatusBadge tone={status.tone}>Risiko {riskLabel[risk.level]}</StatusBadge>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-200">{risk.description}</p>
+                  {risk.recommendation ? <p className="mt-4 rounded-xl bg-white/70 p-3 text-sm leading-6 text-slate-700 dark:bg-slate-950/50 dark:text-slate-200"><strong>Nächster Schritt:</strong> {risk.recommendation}</p> : null}
+                </article>
+              );
+            })}
+          </div>
+        </Disclosure>
+
+        <Disclosure id="foerderungen" title="Förderungen" description={`${result.fundingSuggestions.length} mögliche Hinweise aus deinen Angaben`}>
+          {result.fundingSuggestions.length ? (
+            <div className="grid gap-3 lg:grid-cols-2">
+              {result.fundingSuggestions.map((suggestion) => (
+                <article key={suggestion.id} className="rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <h3 className="font-bold text-ink dark:text-white">{suggestion.title}</h3>
+                    <StatusBadge tone={suggestion.status === "needs_current_verification" ? "caution" : "info"}>{suggestion.status === "needs_current_verification" ? "Angaben ergänzen" : "Prüfen"}</StatusBadge>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{suggestion.reason}</p>
+                </article>
+              ))}
+            </div>
+          ) : <p className="text-sm text-slate-600 dark:text-slate-300">Aus den aktuellen Angaben wurde kein allgemeiner Förderhinweis abgeleitet.</p>}
+          <div className="mt-5">
+            {hasTier(accessTier, "plus") ? <FundingIntelligence input={input} onLoaded={setFundingData} /> : <Upgrade title="Offizielle KfW- und Landesprogramme prüfen" tier="Finanzierung" description="Die vertiefte Prüfung zeigt Voraussetzungen, Fristen, Dokumente, Konflikte und verlinkt jede Empfehlung mit der offiziellen Quelle." />}
+          </div>
+        </Disclosure>
+
+        <Disclosure id="steuer" title="Steuerliche Orientierung" description="Zinsen, AfA, Werbungskosten und möglicher Steuereffekt – klar als Schätzung">
+          {hasTier(accessTier, "pro") ? (
+            <article className="rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-bold text-ink dark:text-white">Unverbindliche Steuerschätzung</h3>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{result.tax.assessmentType === "joint" ? "Gemeinsamer Kauf" : "Kauf allein"} · {result.tax.useType === "owner_occupation" ? "Eigennutzung" : result.tax.useType === "capital_investment" ? "Kapitalanlage" : "Gemischte Nutzung"}</p>
+                </div>
+                <StatusBadge tone="caution">Schätzung</StatusBadge>
+              </div>
+              {result.tax.enabled ? (
+                <dl className="mt-5">
+                  <ResultRow label="Zinsen im ersten Jahr" value={eur(result.tax.annualInterestEstimate)} />
+                  <ResultRow label="AfA" value={eur(result.tax.annualDepreciationEstimate)} />
+                  <ResultRow label="Werbungskosten" value={eur(result.tax.annualAdvertisingCostsEstimate)} />
+                  <ResultRow label="Steuerliches Vermietungsergebnis" value={eur(result.tax.estimatedTaxableRentalResult)} />
+                  <ResultRow label="Orientierender jährlicher Steuereffekt" value={eur(result.tax.estimatedAnnualTaxEffect)} emphasis />
+                </dl>
+              ) : <p className="mt-5 text-sm leading-6 text-slate-600 dark:text-slate-300">Für die gewählte Eigennutzung wird keine Vermietungs-Steuerschätzung berechnet.</p>}
+              <p className="mt-5 text-xs leading-5 text-slate-500 dark:text-slate-400">{result.tax.disclaimer}</p>
+            </article>
+          ) : <Upgrade title="Steuerliche Auswirkungen einordnen" tier="Strategie" description="Die Orientierung unterscheidet Kauf allein oder gemeinsam sowie Eigennutzung, Kapitalanlage oder gemischte Nutzung." />}
+        </Disclosure>
+
+        <Disclosure id="strategien" title="Finanzierungsalternativen" description="Sicherheits-, Balance- und weitere Szenarien verständlich vergleichen">
+          {hasTier(accessTier, "plus") ? (
+            <div className="space-y-4">
+              {recommended ? <p className="rounded-2xl bg-mint p-4 text-sm leading-6 text-teal dark:bg-teal-950 dark:text-teal-100"><strong>Bevorzugtes Szenario:</strong> {recommended.title}. {recommended.summary}</p> : null}
+              {result.strategies.map((strategy) => (
+                <article key={strategy.type} className={strategy.type === result.recommendedStrategyType ? "rounded-2xl border-2 border-teal p-5" : "rounded-2xl border border-slate-200 p-5 dark:border-slate-700"}>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div><h3 className="font-bold text-ink dark:text-white">{strategy.title}</h3><p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{strategy.summary}</p></div>
+                    {strategy.type === result.recommendedStrategyType ? <StatusBadge tone="positive">Bevorzugt</StatusBadge> : null}
+                  </div>
+                  <dl className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <Metric label="Eigenkapital" value={eur(strategy.recommendedEquity)} />
+                    <Metric label="Darlehen" value={eur(strategy.estimatedLoanAmount)} />
+                    <Metric label="Monatsrate" value={eur(strategy.estimatedMonthlyRate)} />
+                    <Metric label="Reserve" value={eur(strategy.estimatedRemainingReserve)} />
+                  </dl>
+                  <div className="mt-5 grid gap-5 text-sm leading-6 lg:grid-cols-3">
+                    <div><h4 className="font-bold text-ink dark:text-white">Vorteile</h4><ul className="mt-2 space-y-1.5 text-slate-600 dark:text-slate-300">{strategy.advantages.map((item) => <li key={item}>+ {item}</li>)}</ul></div>
+                    <div><h4 className="font-bold text-ink dark:text-white">Nachteile</h4><ul className="mt-2 space-y-1.5 text-slate-600 dark:text-slate-300">{strategy.disadvantages.map((item) => <li key={item}>− {item}</li>)}</ul></div>
+                    <div><h4 className="font-bold text-ink dark:text-white">Nächste Schritte</h4><ol className="mt-2 space-y-1.5 text-slate-600 dark:text-slate-300">{strategy.nextSteps.map((item, index) => <li key={item}>{index + 1}. {item}</li>)}</ol></div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : <Upgrade title="Finanzierungsalternativen vergleichen" tier="Finanzierung" description="Mehrere Szenarien zeigen Rate, Darlehen, Reserve sowie Vor- und Nachteile nebeneinander." />}
+        </Disclosure>
+
+        <Disclosure id="ki-agenten" title="Nachvollziehbarkeit und KI-Prüfung" description="Datenquellen, Aktualität, Vertrauen, Fakten, Annahmen und Interpretation">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl bg-cloud p-4 dark:bg-slate-800"><p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Datenquelle</p><p className="mt-1 text-sm font-bold text-ink dark:text-white">Deine Eingaben und deterministische Berechnungen</p></div>
+            <div className="rounded-2xl bg-cloud p-4 dark:bg-slate-800"><p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Aktualität</p><p className="mt-1 text-sm font-bold text-ink dark:text-white">{calculatedAt}</p></div>
+            <div className="rounded-2xl bg-cloud p-4 dark:bg-slate-800"><p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Vertrauensniveau</p><p className="mt-1 text-sm font-bold text-ink dark:text-white">{confidenceLabel[result.supervisor.confidence]}</p></div>
+          </div>
+
+          {hasTier(accessTier, "pro") ? (
+            <div className="mt-5 space-y-4">
+              <article className="rounded-2xl bg-ink p-5 text-white">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-teal-200">Supervisor-Interpretation</p>
+                <p className="mt-3 leading-7 text-slate-200">{result.supervisor.verdict}</p>
+                {result.supervisor.conflicts.map((conflict) => <p key={conflict} className="mt-3 rounded-xl bg-amber-400/15 p-3 text-sm text-amber-100"><strong>Konflikt:</strong> {conflict}</p>)}
+              </article>
+              <div className="grid gap-3 lg:grid-cols-2">
+                {result.agentFindings.map((finding) => (
+                  <article key={finding.agent} className="rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
+                    <div className="flex flex-wrap items-start justify-between gap-3"><h3 className="font-bold text-ink dark:text-white">{finding.facts.title}</h3><StatusBadge tone={finding.confidence === "high" ? "positive" : finding.confidence === "medium" ? "caution" : "negative"}>Vertrauen {confidenceLabel[finding.confidence]}</StatusBadge></div>
+                    <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300"><strong>Fakten:</strong> {finding.facts.summary}</p>
+                    {finding.assumptions.length ? <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300"><strong>Annahmen:</strong> {finding.assumptions.join(" · ")}</p> : null}
+                    {finding.warnings.map((warning) => <p key={warning} className="mt-3 text-sm font-semibold text-amber-800 dark:text-amber-200">{warning}</p>)}
+                    {finding.facts.recommendations.length ? <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300"><strong>KI-Interpretation:</strong> {finding.facts.recommendations.join(" · ")}</p> : null}
+                  </article>
+                ))}
+              </div>
+            </div>
+          ) : <div className="mt-5"><Upgrade title="Agenten- und Supervisor-Prüfung öffnen" tier="Strategie" description="Spezialisierte Agenten prüfen Finanzierung, Objekt, Förderung, Steuern und Risiken; der Supervisor löst Widersprüche auf." /></div>}
+
+          <div className="mt-5 rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
+            <h3 className="font-bold text-ink dark:text-white">Annahmen und Grenzen</h3>
+            <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{result.assumptions.map((assumption) => <li key={assumption}>• {assumption}</li>)}</ul>
+          </div>
+        </Disclosure>
+
+        <Disclosure title="Erklärung, Speichern und Bericht" description="Konkrete KI-Erklärung, Kontospeicherung und Premium-PDF">
+          {hasTier(accessTier, "starter") ? (
+            <div className="rounded-2xl bg-ink p-5 text-white sm:p-6">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <div className="flex items-center gap-2"><Bot className="text-teal-200" size={20} aria-hidden="true" /><h3 className="font-bold">Aufgabenbezogener KI-Assistent</h3></div>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Erklärt dieses Ergebnis anhand deiner Berechnung. Verfügbares API-Budget: {new Intl.NumberFormat("de-DE").format(tokenBalance)} Tokens.</p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <Button onClick={onExplain} disabled={aiLoading} variant="secondary" className="border-white/20 bg-white text-ink hover:bg-slate-100"><Sparkles size={17} aria-hidden="true" />{aiLoading ? "Erklärung wird erstellt …" : "Ergebnis erklären"}</Button>
+                  <Button onClick={onCloudSave} variant="ghost" className="border border-white/20 text-white hover:bg-white/10"><Database size={17} aria-hidden="true" />Im Konto speichern</Button>
+                  {hasTier(accessTier, "premium") ? <Button onClick={handlePdf} variant="ghost" className="border border-teal-400/50 text-teal-100 hover:bg-teal-400/10"><Download size={17} aria-hidden="true" />Gesamtbericht als PDF</Button> : null}
+                </div>
+              </div>
+              {cloudStatus ? <p className="mt-4 text-sm text-slate-300" aria-live="polite">{cloudStatus}</p> : null}
+              {aiSummary ? <div className="mt-5 whitespace-pre-wrap rounded-2xl bg-white/[0.08] p-5 text-sm leading-7 text-slate-100"><p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-teal-200">KI-Interpretation</p>{aiSummary}</div> : null}
+              {!hasTier(accessTier, "premium") ? <p className="mt-4 text-xs text-slate-400">Der vollständige PDF-Bericht mit Analyse, Förderrecherche, Finanzierung und Steuerorientierung ist im Premium-Paket enthalten.</p> : null}
+            </div>
+          ) : <Upgrade title="Ergebnis erklären und im Konto speichern" tier="Analyse" description="Der Assistent beantwortet konkrete Fragen zu deiner Analyse und kennzeichnet seine Interpretation klar." />}
+        </Disclosure>
       </section>
-      : hasTier(accessTier, "plus") ? <FundingIntelligence input={input} onLoaded={setFundingData} /> : <Upgrade title="Förderung und steuerliche Orientierung" tier="Finanzierung oder Strategie" />}
 
-      {hasTier(accessTier, "starter") ? <section className="rounded-3xl bg-slate-950 p-7 text-white">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">KI-Erklärung und Cloudspeicherung</h2>
-            <p className="mt-2 max-w-3xl leading-7 text-slate-300">
-              Die Berechnungen sind deterministisch. KI-Erklärungen und Chat werden transparent aus deinem API-Tokenbudget abgerechnet. Verfügbar: {new Intl.NumberFormat("de-DE").format(tokenBalance)} Tokens.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={onExplain}
-              disabled={aiLoading}
-              className="rounded-xl bg-white px-4 py-3 font-bold text-slate-950 disabled:opacity-50"
-            >
-              {aiLoading ? "KI wertet aus…" : "KI-Erklärung erstellen"}
-            </button>
-            {hasTier(accessTier, "premium") ? <button type="button" onClick={() => { sessionStorage.setItem("property-strategy-report", JSON.stringify({ input, result, aiSummary, fundingData })); window.open("/analyse/bericht", "_blank", "noopener,noreferrer"); }} className="rounded-xl border border-emerald-400 px-4 py-3 font-bold text-emerald-300">Gesamtbericht als PDF</button> : null}
-            <button
-              type="button"
-              onClick={onCloudSave}
-              className="rounded-xl border border-slate-600 px-4 py-3 font-bold"
-            >
-              In Supabase speichern
-            </button>
-          </div>
-        </div>
-
-        {cloudStatus ? <p className="mt-4 text-sm text-slate-300">{cloudStatus}</p> : null}
-        {aiSummary ? (
-          <div className="mt-6 whitespace-pre-wrap rounded-2xl bg-white/10 p-5 leading-7 text-slate-100">
-            {aiSummary}
-          </div>
-        ) : null}
-      </section> : <Upgrade title="KI-Erklärung und Cloudspeicherung" tier="Basis Plus" />}
-
-      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-        <h2 className="font-bold">Annahmen und Grenzen</h2>
-        <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
-          {result.assumptions.map((assumption) => <li key={assumption}>• {assumption}</li>)}
-        </ul>
-      </section>
-    </div>
+      <aside className="mt-6 flex flex-col gap-4 rounded-2xl bg-cloud p-5 dark:bg-slate-800 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3"><FileCheck2 className="mt-0.5 shrink-0 text-teal" size={20} aria-hidden="true" /><p className="text-sm leading-6 text-slate-600 dark:text-slate-300">Diese Analyse ist eine Entscheidungshilfe. Steuer-, Rechts-, Finanzierungs- und Förderangaben sind keine individuelle Beratung.</p></div>
+        <Link href="/analyse" className="inline-flex shrink-0 items-center gap-2 text-sm font-bold text-teal hover:underline dark:text-teal-300">Angaben ändern <ExternalLink size={15} aria-hidden="true" /></Link>
+      </aside>
+    </section>
   );
 }

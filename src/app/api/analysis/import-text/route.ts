@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
   try {
     const { text } = requestSchema.parse(await request.json());
-    const model = process.env.OPENAI_MODEL ?? "gpt-5-mini";
+    const model = process.env.OPENAI_MODEL ?? "gpt-4-turbo";
     const reservation = await reserveApiUsage({
       requiredTier: "starter",
       feature: "expose_text_import",
@@ -76,6 +76,7 @@ export async function POST(request: Request) {
     const data: unknown = await response.json();
     if (!response.ok) {
       await releaseApiUsage(reservation);
+      console.error("import-text.api.response-error", `Status: ${response.status}`);
       return Response.json(
         { ok: false, configured: true, message: "Exposé-Import ist fehlgeschlagen." },
         { status: response.status }
@@ -85,16 +86,23 @@ export async function POST(request: Request) {
     const textOutput = extractOpenAIOutputText(data);
     if (!textOutput) {
       await releaseApiUsage(reservation);
+      console.error("import-text.api.no-text", "OpenAI returned no text content");
       return Response.json({ ok: false, message: "Keine Daten erkannt." }, { status: 502 });
     }
 
     const tokenBalance = await settleApiUsage(reservation, extractOpenAIUsage(data));
     return Response.json({ ok: true, property: JSON.parse(textOutput) as unknown, tokenBalance });
-  } catch {
+  } catch (error) {
     if (activeReservation) await releaseApiUsage(activeReservation);
+    if (error instanceof SyntaxError) {
+      console.error("import-text.api.parse-error", error.message);
+    } else {
+      console.error("import-text.api.error", error instanceof Error ? error.message : String(error));
+    }
     return Response.json(
       { ok: false, message: "Der Text konnte nicht ausgewertet werden." },
       { status: 400 }
     );
   }
 }
+

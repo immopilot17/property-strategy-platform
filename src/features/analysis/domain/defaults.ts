@@ -37,7 +37,7 @@ export const defaultUserProfile: UserProfile = {
 };
 
 export const defaultPropertyProfile: PropertyProfile = {
-  title: "Beispielimmobilie",
+  title: "Neue Immobilie",
   sourceUrl: undefined,
   propertyType: "apartment",
   condition: "good",
@@ -45,7 +45,17 @@ export const defaultPropertyProfile: PropertyProfile = {
   projectType: "existing",
   energeticRenovationPlanned: false,
   firstPurchase: true,
-  address: { street: "", houseNumber: "", postalCode: "", city: "", federalState: "" },
+  address: {
+    street: "",
+    houseNumber: "",
+    postalCode: "",
+    city: "",
+    federalState: "",
+    latitude: null,
+    longitude: null,
+    locationSource: null,
+    geocodedAt: null
+  },
   purchasePrice: 300000,
   livingArea: 80,
   landArea: 0,

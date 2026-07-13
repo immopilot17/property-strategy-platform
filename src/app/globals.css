@@ -4,6 +4,30 @@
 
 :root {
   color-scheme: light;
+  --background: #f5f7f8;
+  --surface: #ffffff;
+  --surface-muted: #edf2f3;
+  --foreground: #10233d;
+  --muted: #5f6f7e;
+  --border: #d8e0e5;
+  --accent: #0d766e;
+  --accent-strong: #095f59;
+  --accent-soft: #dff3ef;
+  --focus: #0d766e;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #0b1524;
+  --surface: #111f31;
+  --surface-muted: #17283b;
+  --foreground: #eef5f5;
+  --muted: #a8b5bf;
+  --border: #2a3b4d;
+  --accent: #57c6ba;
+  --accent-strong: #79d7cd;
+  --accent-soft: #123d3c;
+  --focus: #79d7cd;
 }
 
 * {
@@ -16,13 +40,17 @@ html {
 
 body {
   margin: 0;
-  background: #f8fafc;
-  color: #0f172a;
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-feature-settings: "ss01", "cv02", "cv03";
+  text-rendering: optimizeLegibility;
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
 :focus-visible {
-  outline: 3px solid #10b981;
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
 
@@ -37,7 +65,59 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--foreground);
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.app-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--border) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--border) 45%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 80%);
+}
+
+.property-location-marker {
+  background: transparent;
+  border: 0;
+}
+
+.property-location-marker span {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border: 4px solid white;
+  border-radius: 9999px 9999px 9999px 0;
+  background: var(--accent);
+  box-shadow: 0 6px 18px rgb(15 23 42 / 35%);
+  transform: rotate(-45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
 @media print {
   header[role="banner"], footer[role="contentinfo"], body > div > button { display: none !important; }
-  body { background: white; }
+  body { background: white; color: #0f172a; }
 }

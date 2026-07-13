@@ -16,7 +16,7 @@ async function mapWithConcurrency<T>(items: T[], concurrency: number, task: (ite
 }
 
 function assertFundingEnvironment() {
-  const required = ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "OPENAI_API_KEY", "CRON_SECRET"] as const;
+  const required = ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "CRON_SECRET"] as const;
   const missing = required.filter((name) => !process.env[name]?.trim());
   if (missing.length) throw new Error(`Funding-Konfiguration fehlt: ${missing.join(", ")}.`);
 }
@@ -39,7 +39,7 @@ export async function synchronizeFundingProviders() {
           const { data: current, error: currentError } = await supabase.from("funding_program_versions").select("source_checksum").eq("provider_id", provider.id).eq("official_source", url).order("fetched_at", { ascending: false }).limit(1).maybeSingle();
           if (currentError) throw currentError;
           if (current?.source_checksum === document.checksum) { entry.unchanged++; return; }
-          const program = await normalizeFundingDocument(document);
+          const program = normalizeFundingDocument(document);
           const { error } = await supabase.from("funding_program_versions").insert({
             provider_id: program.providerId, program_id: program.programId, program_name: program.programName,
             official_source: program.officialSource, source_checksum: document.checksum, source_snapshot: document.text,

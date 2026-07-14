@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BarChart3, Building2, CircleDollarSign, Clock3, Sparkles, WalletCards } from "lucide-react";
+import { ArrowRight, BarChart3, Building2, CircleDollarSign, Clock3, FileCheck2, WalletCards } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { FeedbackState } from "@/components/ui/feedback-state";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { readAnalysisDraft, readLocalAnalyses, type SavedAnalysis } from "@/lib/storage/analyses";
+import { readAnalysisDraft, readLocalAnalyses, setActiveAnalysis, type SavedAnalysis } from "@/lib/storage/analyses";
 
 const currency = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 
@@ -19,12 +20,13 @@ const riskStatus = {
 
 const actions = [
   { href: "/analyse", icon: BarChart3, title: "Neue Immobilie analysieren", description: "Kosten, Rate und Risiken verständlich prüfen" },
-  { href: "/dashboard/foerderungen", icon: Sparkles, title: "Passende Förderprogramme prüfen", description: "KfW- und L-Bank-Programme aus offiziellen Quellen ansehen" },
+  { href: "/analysen", icon: FileCheck2, title: "Interaktive Ergebnisse öffnen", description: "Berechnungen, Risiken und nächste Schritte erneut ansehen" },
   { href: "/dashboard/strategien", icon: WalletCards, title: "Finanzierungsstrategie öffnen", description: "Eigenkapital, Rate und Reserve einordnen" },
   { href: "/dashboard/properties", icon: Building2, title: "Gespeicherte Immobilien", description: "Objekte verwalten und Analysen fortsetzen" }
 ];
 
 export function DashboardHome() {
+  const router = useRouter();
   const [analyses, setAnalyses] = useState<SavedAnalysis[]>([]);
   const [hasDraft, setHasDraft] = useState(false);
   const [ready, setReady] = useState(false);
@@ -37,12 +39,17 @@ export function DashboardHome() {
 
   const latest = analyses[0];
   const currentStatus = latest ? riskStatus[latest.result.overallRiskLevel] : null;
+  const openLatest = () => {
+    if (!latest) return;
+    setActiveAnalysis(latest);
+    router.push("/analyse");
+  };
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal dark:text-teal-300">Deine Übersicht</p>
+          <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal dark:text-teal-300">Persönliches Dashboard</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight text-ink dark:text-white sm:text-4xl">Was möchtest du als Nächstes tun?</h1>
           <p className="mt-3 max-w-2xl leading-7 text-slate-600 dark:text-slate-300">Setze deine Entscheidung fort oder beginne eine neue, kostenlose Analyse.</p>
         </div>
@@ -75,7 +82,7 @@ export function DashboardHome() {
               <div><dt className="text-sm text-slate-500 dark:text-slate-400">Monatliche Rate</dt><dd className="mt-1 text-xl font-bold text-ink dark:text-white">{currency.format(latest.result.financing.monthlyLoanRate)}</dd></div>
               <div><dt className="text-sm text-slate-500 dark:text-slate-400">Gespeichert</dt><dd className="mt-1 text-base font-bold text-ink dark:text-white">{new Date(latest.createdAt).toLocaleDateString("de-DE")}</dd></div>
             </dl>
-            <ButtonLink href="/analysen" variant="secondary" className="mt-5 w-full sm:w-auto">Ergebnis öffnen <ArrowRight size={18} aria-hidden="true" /></ButtonLink>
+            <Button onClick={openLatest} variant="secondary" className="mt-5 w-full sm:w-auto">Interaktiven Ergebnisbericht öffnen <ArrowRight size={18} aria-hidden="true" /></Button>
           </article>
         ) : (
           <article className="rounded-3xl border border-teal-200 bg-mint p-6 dark:border-teal-800 dark:bg-teal-950/50 sm:p-8">

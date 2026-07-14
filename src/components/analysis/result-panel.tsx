@@ -54,10 +54,10 @@ function Metric({ label, value, note }: { label: string; value: string; note?: s
 function Upgrade({ title, tier, description }: { title: string; tier: string; description: string }) {
   return (
     <div className="rounded-2xl border border-dashed border-slate-300 bg-cloud p-5 dark:border-slate-700 dark:bg-slate-800/70">
-      <p className="text-xs font-black uppercase tracking-[0.16em] text-teal dark:text-teal-300">Paket {tier}</p>
+      <p className="text-xs font-black uppercase tracking-[0.16em] text-teal dark:text-teal-300">Leistungsstufe {tier}</p>
       <h3 className="mt-2 text-lg font-bold text-ink dark:text-white">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{description} Die grundlegende Immobilienanalyse bleibt kostenlos.</p>
-      <ButtonLink href="/dashboard/zahlungen" variant="secondary" size="sm" className="mt-4">Pakete vergleichen <ArrowRight size={16} aria-hidden="true" /></ButtonLink>
+      <ButtonLink href="/dashboard/zahlungen" variant="secondary" size="sm" className="mt-4">Tarife & Leistungen vergleichen <ArrowRight size={16} aria-hidden="true" /></ButtonLink>
     </div>
   );
 }
@@ -115,9 +115,9 @@ export function ResultPanel({
   return (
     <section id="ergebnis" className="mt-16 scroll-mt-24 border-t border-slate-200 pt-12 dark:border-slate-800" aria-labelledby="result-title">
       <header className="max-w-3xl">
-        <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal dark:text-teal-300">Dein Ergebnis</p>
+        <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal dark:text-teal-300">Interaktiver Ergebnisbericht</p>
         <h2 id="result-title" className="text-balance mt-2 text-3xl font-black tracking-tight text-ink dark:text-white sm:text-5xl">Was die Zahlen für deine Entscheidung bedeuten.</h2>
-        <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Berechnet am {calculatedAt}</p>
+        <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Berechnet am {calculatedAt} · Finanzwerte ausschließlich aus der Calculation Engine</p>
       </header>
 
       <div className={`mt-8 rounded-3xl border p-6 sm:p-8 ${decision.panel}`}>
@@ -142,19 +142,19 @@ export function ResultPanel({
             <div>
               <div className="flex items-center gap-2">
                 <Bot className="text-teal-200" size={22} aria-hidden="true" />
-                <h3 id="ai-analysis-title" className="text-xl font-black">KI-Analyse zu deinem Ergebnis</h3>
+                <h3 id="ai-analysis-title" className="text-xl font-black">KI-Erklärung zu deinem Ergebnis</h3>
               </div>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Lass Risiken, Annahmen und die nächsten sinnvollen Schritte verständlich einordnen. API-Budget: {unlimited ? "unbegrenzt" : `${new Intl.NumberFormat("de-DE").format(tokenBalance)} Tokens`}.</p>
             </div>
             <Button onClick={onExplain} disabled={aiLoading} variant="secondary" className="shrink-0 border-white/20 bg-white text-ink hover:bg-slate-100">
               <Sparkles size={17} aria-hidden="true" />
-              {aiLoading ? "KI-Analyse wird erstellt …" : "KI-Analyse erstellen"}
+              {aiLoading ? "KI-Erklärung wird erstellt …" : "KI-Erklärung erstellen"}
             </Button>
           </div>
           {aiSummary ? <div className="mt-5 whitespace-pre-wrap rounded-2xl bg-white/[0.08] p-5 text-sm leading-7 text-slate-100"><p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-teal-200">KI-Interpretation</p>{aiSummary}</div> : null}
         </section>
       ) : (
-        <div className="mt-5"><Upgrade title="KI-Analyse erstellen" tier="Analyse" description="Der Assistent erklärt Risiken, Annahmen und nächste Schritte anhand deiner Berechnung." /></div>
+        <div className="mt-5"><Upgrade title="KI-Erklärung erstellen" tier="Analyse" description="Der Assistent erklärt Risiken, Annahmen und nächste Schritte anhand deiner Berechnung." /></div>
       )}
 
       <dl className="mt-5 grid gap-4 md:grid-cols-3">

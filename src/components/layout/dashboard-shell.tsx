@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, Building2, CircleDollarSign, LayoutDashboard, Sparkles } from "lucide-react";
+import { BarChart3, Building2, CircleDollarSign, LayoutDashboard, UserRound } from "lucide-react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 
@@ -9,8 +9,8 @@ const items = [
   { href: "/dashboard", label: "Übersicht", icon: LayoutDashboard },
   { href: "/analysen", label: "Analysen", icon: BarChart3 },
   { href: "/dashboard/properties", label: "Immobilien", icon: Building2 },
-  { href: "/dashboard/foerderungen", label: "Förderungen", icon: Sparkles },
-  { href: "/dashboard/zahlungen", label: "Pakete", icon: CircleDollarSign }
+  { href: "/dashboard/konto", label: "Mein Konto", icon: UserRound },
+  { href: "/dashboard/zahlungen", label: "Tarife & Leistungen", icon: CircleDollarSign }
 ];
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {

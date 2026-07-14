@@ -5,16 +5,19 @@ import { Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Brand } from "@/components/ui/brand";
-import { ButtonLink } from "@/components/ui/button";
 import { FounderBadge } from "@/components/founder/founder-badge";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "./theme-toggle";
 
-const navigation = [
-  { href: "/#so-funktionierts", label: "So funktioniert’s" },
-  { href: "/dashboard/zahlungen", label: "Pakete" },
-  { href: "/dashboard", label: "Dashboard" }
-];
+const navigationBeforeAuth = [
+  { href: "/#so-funktionierts", label: "So funktioniert’s", accent: false },
+  { href: "/dashboard", label: "Dashboard", accent: false },
+  { href: "/analyse", label: "Analyse starten", accent: true },
+  { href: "/dashboard/properties", label: "Meine Immobilien", accent: false },
+  { href: "/dashboard/konto", label: "Mein Konto", accent: false }
+] as const;
+
+const tariffLink = { href: "/dashboard/zahlungen", label: "Tarife & Leistungen" } as const;
 
 type AccountStatus = {
   signedIn: boolean;
@@ -23,7 +26,9 @@ type AccountStatus = {
   unlimited: boolean;
 };
 
-const navClass = "rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-ink dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white";
+const navClass = "whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-ink dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white";
+const accentNavClass = "whitespace-nowrap rounded-xl bg-teal px-3.5 py-2.5 text-sm font-bold text-white transition hover:bg-teal-800 dark:bg-teal-500 dark:text-slate-950 dark:hover:bg-teal-400";
+const mobileNavClass = "rounded-xl px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -51,33 +56,57 @@ export function SiteHeader() {
     }
   };
 
-  const accountLinks = account?.signedIn ? (
-    <>
-      <FounderBadge isFounder={account.role === "founder"} />
-      {account.role !== "user" ? <Link href="/admin" className="rounded-xl px-3.5 py-2.5 text-sm font-semibold text-teal transition hover:bg-mint dark:text-teal-300 dark:hover:bg-teal-950">Admin</Link> : null}
-      <Link href="/analysen" className={navClass}>Mein Konto</Link>
-      <button type="button" onClick={signOut} disabled={signingOut} className={`${navClass} disabled:opacity-60`}>{signingOut ? "Abmeldung …" : "Abmelden"}</button>
-    </>
-  ) : <Link href="/login" className={navClass}>Anmelden</Link>;
+  const authControl = account?.signedIn ? (
+    <button type="button" onClick={signOut} disabled={signingOut} className={`${navClass} disabled:opacity-60`}>
+      {signingOut ? "Abmeldung …" : "Abmelden"}
+    </button>
+  ) : (
+    <Link href="/login" className={navClass}>Anmelden</Link>
+  );
 
   return (
     <header role="banner" className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/92 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/90 print:hidden">
-      <nav aria-label="Hauptnavigation" className="mx-auto flex h-[72px] max-w-[1480px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+      <nav aria-label="Hauptnavigation" className="mx-auto flex min-h-[72px] max-w-[1680px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <Brand compact />
-        <div className="hidden items-center gap-1 lg:flex">
-          {navigation.map((item) => <Link key={item.href} href={item.href} aria-current={pathname === item.href ? "page" : undefined} className={navClass}>{item.label}</Link>)}
-          {accountLinks}
+        <div className="hidden min-w-0 items-center gap-0.5 xl:flex">
+          {navigationBeforeAuth.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={pathname === item.href ? "page" : undefined}
+              className={item.accent ? accentNavClass : navClass}
+            >
+              {item.label}
+            </Link>
+          ))}
+          {authControl}
+          <Link href={tariffLink.href} aria-current={pathname === tariffLink.href ? "page" : undefined} className={navClass}>{tariffLink.label}</Link>
           <ThemeToggle />
-          <ButtonLink href="/analyse" size="sm" className="ml-2">Jetzt kostenlos starten</ButtonLink>
+          {account?.role === "founder" ? <FounderBadge isFounder /> : null}
+          {account?.role !== undefined && account.role !== "user" ? (
+            <Link href="/admin" className="rounded-xl px-3 py-2.5 text-sm font-bold text-teal transition hover:bg-mint dark:text-teal-300 dark:hover:bg-teal-950">Admin</Link>
+          ) : null}
         </div>
-        <div className="flex items-center gap-1 lg:hidden">
+        <div className="flex items-center gap-1 xl:hidden">
           <ThemeToggle />
           <button type="button" onClick={() => setOpen((current) => !current)} aria-expanded={open} aria-controls="mobile-navigation" aria-label={open ? "Menü schließen" : "Menü öffnen"} className="grid h-11 w-11 place-items-center rounded-xl text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
             {open ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
           </button>
         </div>
       </nav>
-      {open ? <div id="mobile-navigation" className="border-t border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-950 lg:hidden"><div className="mx-auto grid max-w-xl gap-1">{navigation.map((item) => <Link key={item.href} href={item.href} className="rounded-xl px-4 py-3 font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">{item.label}</Link>)}{account?.signedIn ? <>{account.role === "founder" ? <div className="px-4 py-2"><FounderBadge isFounder /></div> : null}{account.role !== "user" ? <Link href="/admin" className="rounded-xl px-4 py-3 font-semibold text-teal hover:bg-mint dark:text-teal-300 dark:hover:bg-teal-950">Admin-Konsole</Link> : null}<Link href="/analysen" className="rounded-xl px-4 py-3 font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">Mein Konto</Link><button type="button" onClick={signOut} disabled={signingOut} className="rounded-xl px-4 py-3 text-left font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-60 dark:text-slate-200 dark:hover:bg-slate-800">{signingOut ? "Abmeldung …" : "Abmelden"}</button></> : <Link href="/login" className="rounded-xl px-4 py-3 font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">Anmelden</Link>}<ButtonLink href="/analyse" className="mt-2 w-full">Jetzt kostenlos starten</ButtonLink></div></div> : null}
+      {open ? (
+        <div id="mobile-navigation" className="border-t border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-950 xl:hidden">
+          <div className="mx-auto grid max-w-xl gap-1">
+            {navigationBeforeAuth.map((item) => <Link key={item.href} href={item.href} className={item.accent ? `${mobileNavClass} bg-teal text-white hover:bg-teal-800 dark:text-slate-950` : mobileNavClass}>{item.label}</Link>)}
+            {account?.signedIn ? (
+              <button type="button" onClick={signOut} disabled={signingOut} className={`${mobileNavClass} text-left disabled:opacity-60`}>{signingOut ? "Abmeldung …" : "Abmelden"}</button>
+            ) : <Link href="/login" className={mobileNavClass}>Anmelden</Link>}
+            <Link href={tariffLink.href} className={mobileNavClass}>{tariffLink.label}</Link>
+            {account?.role === "founder" ? <div className="px-4 py-2"><FounderBadge isFounder /></div> : null}
+            {account?.role !== undefined && account.role !== "user" ? <Link href="/admin" className={`${mobileNavClass} text-teal dark:text-teal-300`}>Admin-Konsole</Link> : null}
+          </div>
+        </div>
+      ) : null}
     </header>
   );
 }

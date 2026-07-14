@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { AnalysisInput, FullAnalysisResult, PropertyProfile } from "@/features/analysis/domain";
 import { defaultAnalysisInput } from "@/features/analysis/domain";
+import { calculateAnalysis } from "@/features/analysis/calculations";
 import {
   consumeActiveAnalysis,
   clearAnalysisDraft,
@@ -30,6 +31,7 @@ export function AnalysisWorkbench() {
   const [importStatus, setImportStatus] = useState("");
   const [initialSourceUrl, setInitialSourceUrl] = useState("");
   const [analysisStatus, setAnalysisStatus] = useState("");
+  const liveCalculation = useMemo(() => calculateAnalysis(input), [input]);
 
   useEffect(() => {
     const active = consumeActiveAnalysis();
@@ -51,6 +53,7 @@ export function AnalysisWorkbench() {
     const params = new URLSearchParams(window.location.search);
     const sourceUrl = params.get("sourceUrl");
     const selectedGoal = params.get("goal");
+    const selectedStart = params.get("start");
     const requestedSection = window.location.hash.slice(1);
     const sectionStep: Record<string, number> = { immobilie: 2, finanzen: 3, finanzierung: 4 };
     const resultSections = new Set(["ergebnis", "risiken", "foerderungen", "strategien", "steuer"]);
@@ -77,6 +80,14 @@ export function AnalysisWorkbench() {
           purchaseGoal: selectedGoal === "buy" ? "owner_occupation" : "capital_investment"
         }
       }));
+    }
+    if (!sourceUrl) {
+      if (selectedStart === "budget") setStep(3);
+      if (selectedStart === "property" || selectedStart === "manual") setStep(2);
+      if (selectedStart === "link") {
+        setStep(1);
+        window.setTimeout(() => document.getElementById("immobilienlink-start")?.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
+      }
     }
   }, []);
 
@@ -260,6 +271,7 @@ export function AnalysisWorkbench() {
         step={step}
         setStep={setStep}
         input={input}
+        liveCalculation={liveCalculation}
         setInput={setInput}
         errors={errors}
         loading={loading}

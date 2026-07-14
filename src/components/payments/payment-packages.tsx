@@ -37,8 +37,8 @@ export function PaymentPackages({ signedIn, tokenBalance }: { signedIn: boolean;
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
       <header className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
         <div className="max-w-3xl">
-          <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal dark:text-teal-300">Pakete und API-Nutzung</p>
-          <h1 className="text-balance mt-3 text-3xl font-black tracking-tight text-ink dark:text-white sm:text-5xl">Die Immobilienanalyse bleibt kostenlos.</h1>
+          <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal dark:text-teal-300">Tarife & Leistungen</p>
+          <h1 className="text-balance mt-3 text-3xl font-black tracking-tight text-ink dark:text-white sm:text-5xl">Die Grundanalyse bleibt kostenlos.</h1>
           <p className="mt-4 text-lg leading-8 text-slate-600 dark:text-slate-300">Wähle nur dann ein Paket, wenn du KI-Erklärungen, Finanzierungsalternativen, Förderrecherche oder einen vollständigen PDF-Bericht brauchst.</p>
         </div>
         <div className="rounded-2xl bg-ink px-5 py-4 text-white">

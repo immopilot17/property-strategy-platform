@@ -4,7 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { ArrowLeft, ArrowRight, Check, Cloud, Home, Landmark, SearchCheck, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { LocationFields } from "@/components/location/LocationFields";
-import type { AnalysisInput, PropertyProfile } from "@/features/analysis/domain";
+import type { AnalysisInput, CalculationResult, PropertyProfile } from "@/features/analysis/domain";
 import { Button } from "@/components/ui/button";
 import { Disclosure } from "@/components/ui/disclosure";
 import { UrlImporter, type ImportedProperty } from "./url-importer";
@@ -16,6 +16,7 @@ type AnalysisWizardProps = {
   step: number;
   setStep: Dispatch<SetStateAction<number>>;
   input: AnalysisInput;
+  liveCalculation: CalculationResult;
   setInput: Dispatch<SetStateAction<AnalysisInput>>;
   errors: ApiError[];
   loading: boolean;
@@ -170,7 +171,7 @@ function WizardPanel({ eyebrow, title, description, children }: { eyebrow: strin
 
 export function AnalysisWizard(props: AnalysisWizardProps) {
   const {
-    step, setStep, input, setInput, errors, loading, analysisStatus, initialSourceUrl,
+    step, setStep, input, liveCalculation, setInput, errors, loading, analysisStatus, initialSourceUrl,
     importText, importStatus, setImportText, onImportText, onRun, onUserChange,
     onPartnerChange, onPropertyChange, onFinancingChange, onSettingsChange
   } = props;
@@ -185,6 +186,21 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
     { now: "Du prüfst die finanzielle Ausgangslage.", why: "Einkommen, Ausgaben und Eigenkapital bestimmen die tragbare Belastung.", next: "Danach legst du den Finanzierungsrahmen fest." },
     { now: "Du bestimmst Zins, Tilgung und Eigenkapital.", why: "Diese Werte beeinflussen Monatsrate, Restschuld und Reserve.", next: "Danach kontrollierst du alle Angaben." },
     { now: "Du prüfst die Zusammenfassung.", why: "Nur bestätigte Angaben fließen in Bewertung und KI-Erklärung ein.", next: "Starte anschließend die Analyse." }
+  ][step - 1];
+  const contextHint = [
+    input.user.purchaseGoal === "owner_occupation"
+      ? "Ich richte die nächsten Fragen auf tragbare Rate, Reserve und Eigennutzung aus."
+      : input.user.purchaseGoal === "capital_investment"
+        ? "Ich richte die nächsten Fragen auf Rendite, Cashflow und Anlagerisiken aus."
+        : "Ich berücksichtige Eigennutzung und Vermietung gemeinsam.",
+    `Aus den aktuellen Objektdaten ergibt die Calculation Engine eine Gesamtinvestition von ${currency.format(liveCalculation.purchaseCosts.totalInvestmentCosts)}.`,
+    liveCalculation.affordability.remainingMonthlyLiquidity >= 0
+      ? `Nach den aktuell erfassten Belastungen verbleiben rechnerisch ${currency.format(liveCalculation.affordability.remainingMonthlyLiquidity)} pro Monat.`
+      : `Der aktuelle Zwischenstand zeigt eine monatliche Lücke von ${currency.format(Math.abs(liveCalculation.affordability.remainingMonthlyLiquidity))}. Prüfe Einkommen, Ausgaben und Kaufpreis.`,
+    liveCalculation.financing.loanToValuePercent > 100
+      ? `Der Beleihungsauslauf liegt aktuell bei ${liveCalculation.financing.loanToValuePercent.toFixed(1)} %. Mehr Eigenkapital oder ein niedrigerer Kaufpreis würde den Finanzierungsrahmen entlasten.`
+      : `Der Beleihungsauslauf liegt aktuell bei ${liveCalculation.financing.loanToValuePercent.toFixed(1)} %. Zins und Tilgung bestimmen jetzt die Monatsrate.`,
+    `Die Calculation Engine kommt derzeit auf ${currency.format(liveCalculation.financing.monthlyLoanRate)} Monatsrate und ${currency.format(liveCalculation.affordability.remainingMonthlyLiquidity)} verbleibende Liquidität.`
   ][step - 1];
   const updateAddress = <K extends keyof AnalysisInput["property"]["address"]>(key: K, value: AnalysisInput["property"]["address"][K]) => {
     setInput((current) => ({ ...current, property: { ...current.property, address: { ...current.property.address, [key]: value } } }));
@@ -247,7 +263,7 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
         <div className="min-w-0 space-y-5">
         {step === 1 ? (
           <WizardPanel eyebrow="1 · Dein Ziel" title="Was möchtest du mit der Immobilie erreichen?" description="Diese Auswahl bestimmt, welche Kennzahlen, Förderungen und Steuerhinweise später wichtig sind.">
-            <div className="mb-7 rounded-2xl border-2 border-teal/30 bg-mint/60 p-5 dark:border-teal-700 dark:bg-teal-950/40">
+            <div id="immobilienlink-start" className="mb-7 scroll-mt-28 rounded-2xl border-2 border-teal/30 bg-mint/60 p-5 dark:border-teal-700 dark:bg-teal-950/40">
               <p className="font-black text-ink dark:text-white">Direkt mit einem Immobilienlink starten</p>
               <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">Inserat einfügen, Eckdaten automatisch übernehmen und anschließend kontrollieren.</p>
               <div className="mt-4"><UrlImporter initialUrl={initialSourceUrl} onImported={handleImported} /></div>
@@ -472,6 +488,16 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
             <section className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800"><h2 className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Warum ist das wichtig?</h2><p className="mt-2 text-sm leading-6 text-ink dark:text-white">{guide.why}</p></section>
             <section className="rounded-2xl bg-mint p-4 dark:bg-teal-950"><h2 className="text-xs font-black uppercase tracking-[0.14em] text-teal">Als Nächstes</h2><p className="mt-2 text-sm leading-6 text-teal dark:text-teal-100">{guide.next}</p></section>
           </div>
+          <section className="mt-4 rounded-2xl border border-slate-200 p-4 dark:border-slate-700" aria-live="polite">
+            <div className="flex items-center justify-between gap-3"><h2 className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Live-Berechnung</h2><span className="h-2 w-2 rounded-full bg-teal" /></div>
+            <dl className="mt-3 grid gap-2 text-sm">
+              <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">Gesamtinvestition</dt><dd className="font-bold text-ink dark:text-white">{currency.format(liveCalculation.purchaseCosts.totalInvestmentCosts)}</dd></div>
+              <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">Monatsrate</dt><dd className="font-bold text-ink dark:text-white">{currency.format(liveCalculation.financing.monthlyLoanRate)}</dd></div>
+              <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">Liquidität</dt><dd className="font-bold text-ink dark:text-white">{currency.format(liveCalculation.affordability.remainingMonthlyLiquidity)}</dd></div>
+            </dl>
+            <p className="mt-3 border-t border-slate-200 pt-3 text-xs leading-5 text-slate-500 dark:border-slate-700">Direkt aus der bestehenden Calculation Engine. Die KI verändert diese Werte nicht.</p>
+          </section>
+          <section className="mt-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800"><h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-teal"><Sparkles size={14} />Kontext-Hinweis</h2><p className="mt-2 text-sm leading-6 text-ink dark:text-white">{contextHint}</p></section>
           {loading || analysisStatus ? <div className="mt-4 rounded-2xl border border-teal-100 p-4 dark:border-teal-900"><p className="flex items-center gap-2 text-sm font-bold text-teal"><Sparkles size={16} className="animate-pulse" />KI arbeitet</p><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700"><div className="h-full w-3/4 animate-pulse rounded-full bg-teal" /></div><p className="mt-2 text-xs leading-5 text-slate-500">{analysisStatus || "Deine Angaben werden geprüft und berechnet."}</p></div> : null}
         </aside>
       </div>

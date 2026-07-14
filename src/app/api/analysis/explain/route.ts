@@ -1,10 +1,16 @@
 import { z } from "zod";
 import { releaseApiUsage, reserveApiUsage, settleApiUsage } from "@/features/payments/server";
 import { extractOpenAIOutputText, extractOpenAIUsage } from "@/lib/openai";
+import { getRoleAccess } from "@/lib/auth/server";
+import { isFeatureEnabled } from "@/lib/auth/feature-flags";
 
 const requestSchema = z.object({ input: z.record(z.unknown()), result: z.record(z.unknown()) });
 
 export async function POST(request: Request) {
+  const access = await getRoleAccess();
+  if (!(await isFeatureEnabled("ai_analysis", access.role))) {
+    return Response.json({ ok: false, configured: true, message: "Die KI-Analyse ist vorübergehend deaktiviert." }, { status: 503 });
+  }
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return Response.json({ ok: false, configured: false, message: "OPENAI_API_KEY ist nicht konfiguriert." }, { status: 503 });
 

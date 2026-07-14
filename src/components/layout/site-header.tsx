@@ -12,7 +12,6 @@ import { ThemeToggle } from "./theme-toggle";
 
 const navigation = [
   { href: "/#so-funktionierts", label: "So funktioniert’s" },
-  { href: "/dashboard/foerderungen", label: "Förderungen" },
   { href: "/dashboard/zahlungen", label: "Pakete" },
   { href: "/dashboard", label: "Dashboard" }
 ];
@@ -20,14 +19,18 @@ const navigation = [
 type AccountStatus = {
   signedIn: boolean;
   tier: string;
+  role: "user" | "admin" | "founder";
   unlimited: boolean;
 };
+
+const navClass = "rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-ink dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white";
 
 export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [account, setAccount] = useState<AccountStatus | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+
   useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
     const controller = new AbortController();
@@ -48,13 +51,22 @@ export function SiteHeader() {
     }
   };
 
+  const accountLinks = account?.signedIn ? (
+    <>
+      <FounderBadge isFounder={account.role === "founder"} />
+      {account.role !== "user" ? <Link href="/admin" className="rounded-xl px-3.5 py-2.5 text-sm font-semibold text-teal transition hover:bg-mint dark:text-teal-300 dark:hover:bg-teal-950">Admin</Link> : null}
+      <Link href="/analysen" className={navClass}>Mein Konto</Link>
+      <button type="button" onClick={signOut} disabled={signingOut} className={`${navClass} disabled:opacity-60`}>{signingOut ? "Abmeldung …" : "Abmelden"}</button>
+    </>
+  ) : <Link href="/login" className={navClass}>Anmelden</Link>;
+
   return (
     <header role="banner" className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/92 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/90 print:hidden">
       <nav aria-label="Hauptnavigation" className="mx-auto flex h-[72px] max-w-[1480px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Brand compact />
         <div className="hidden items-center gap-1 lg:flex">
-          {navigation.map((item) => <Link key={item.href} href={item.href} aria-current={pathname === item.href ? "page" : undefined} className="rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-ink dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white">{item.label}</Link>)}
-          {account?.signedIn ? <><FounderBadge isFounder={account.tier === "founder" && account.unlimited} /><Link href="/analysen" className="rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-ink dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white">Mein Konto</Link><button type="button" onClick={signOut} disabled={signingOut} className="rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-ink disabled:opacity-60 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white">{signingOut ? "Abmeldung …" : "Abmelden"}</button></> : <Link href="/login" className="rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-ink dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white">Anmelden</Link>}
+          {navigation.map((item) => <Link key={item.href} href={item.href} aria-current={pathname === item.href ? "page" : undefined} className={navClass}>{item.label}</Link>)}
+          {accountLinks}
           <ThemeToggle />
           <ButtonLink href="/analyse" size="sm" className="ml-2">Jetzt kostenlos starten</ButtonLink>
         </div>
@@ -65,7 +77,7 @@ export function SiteHeader() {
           </button>
         </div>
       </nav>
-      {open ? <div id="mobile-navigation" className="border-t border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-950 lg:hidden"><div className="mx-auto grid max-w-xl gap-1">{navigation.map((item) => <Link key={item.href} href={item.href} className="rounded-xl px-4 py-3 font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">{item.label}</Link>)}{account?.signedIn ? <><div className="px-4 py-2"><FounderBadge isFounder={account.tier === "founder" && account.unlimited} /></div><Link href="/analysen" className="rounded-xl px-4 py-3 font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">Mein Konto</Link><button type="button" onClick={signOut} disabled={signingOut} className="rounded-xl px-4 py-3 text-left font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-60 dark:text-slate-200 dark:hover:bg-slate-800">{signingOut ? "Abmeldung …" : "Abmelden"}</button></> : <Link href="/login" className="rounded-xl px-4 py-3 font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">Anmelden</Link>}<ButtonLink href="/analyse" className="mt-2 w-full">Jetzt kostenlos starten</ButtonLink></div></div> : null}
+      {open ? <div id="mobile-navigation" className="border-t border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-950 lg:hidden"><div className="mx-auto grid max-w-xl gap-1">{navigation.map((item) => <Link key={item.href} href={item.href} className="rounded-xl px-4 py-3 font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">{item.label}</Link>)}{account?.signedIn ? <>{account.role === "founder" ? <div className="px-4 py-2"><FounderBadge isFounder /></div> : null}{account.role !== "user" ? <Link href="/admin" className="rounded-xl px-4 py-3 font-semibold text-teal hover:bg-mint dark:text-teal-300 dark:hover:bg-teal-950">Admin-Konsole</Link> : null}<Link href="/analysen" className="rounded-xl px-4 py-3 font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">Mein Konto</Link><button type="button" onClick={signOut} disabled={signingOut} className="rounded-xl px-4 py-3 text-left font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-60 dark:text-slate-200 dark:hover:bg-slate-800">{signingOut ? "Abmeldung …" : "Abmelden"}</button></> : <Link href="/login" className="rounded-xl px-4 py-3 font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">Anmelden</Link>}<ButtonLink href="/analyse" className="mt-2 w-full">Jetzt kostenlos starten</ButtonLink></div></div> : null}
     </header>
   );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { requireRolePage } from "@/lib/auth/server";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,8 @@ function state(title: string, description: string, requirements: string[] = []):
   return { title, description, ready: missing.length === 0, missing };
 }
 
-export default function SystemstatusPage() {
+export default async function SystemstatusPage() {
+  await requireRolePage("founder");
   const supabaseRequirements = [
     "NEXT_PUBLIC_SUPABASE_URL",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY",

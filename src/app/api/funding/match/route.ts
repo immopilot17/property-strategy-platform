@@ -2,10 +2,12 @@ import { validateAnalysisInput } from "@/features/analysis/domain";
 import { matchFundingPrograms } from "@/features/funding/agent";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireTier } from "@/features/payments/server";
+import { isFeatureEnabled } from "@/lib/auth/feature-flags";
 
 export async function POST(request: Request) {
   try {
     const access = await requireTier("plus");
+    if (!(await isFeatureEnabled("funding_intelligence", access.role))) return Response.json({ message: "Die Förderprüfung ist vorübergehend deaktiviert." }, { status: 503 });
     if (!access.allowed) return Response.json({ message: "Die Förderprüfung ist im Finanzierungspaket verfügbar." }, { status: 403 });
     
     const body = await request.json();

@@ -1,7 +1,7 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import { ArrowLeft, ArrowRight, Check, Cloud, Home, Landmark, SearchCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Cloud, Home, Landmark, SearchCheck, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { LocationFields } from "@/components/location/LocationFields";
 import type { AnalysisInput, PropertyProfile } from "@/features/analysis/domain";
@@ -179,6 +179,13 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
   const totalIncome = input.user.householdNetIncome + input.user.additionalMonthlyIncome + (partner?.monthlyNetIncome ?? 0) + (partner?.additionalMonthlyIncome ?? 0);
   const totalLoans = input.user.existingLoanPayments + (partner?.existingLoanPayments ?? 0);
   const totalEquity = input.user.availableEquity + (partner?.availableEquity ?? 0);
+  const guide = [
+    { now: "Du legst dein Ziel fest.", why: "So zeigt die Analyse nur Kennzahlen, die zu deinem Vorhaben passen.", next: "Danach erfassen wir die Immobilie." },
+    { now: "Du erfasst die wichtigsten Objektdaten.", why: "Kaufpreis, Fläche und Standort bilden die Basis aller Berechnungen.", next: "Danach prüfen wir deinen Haushalt." },
+    { now: "Du prüfst die finanzielle Ausgangslage.", why: "Einkommen, Ausgaben und Eigenkapital bestimmen die tragbare Belastung.", next: "Danach legst du den Finanzierungsrahmen fest." },
+    { now: "Du bestimmst Zins, Tilgung und Eigenkapital.", why: "Diese Werte beeinflussen Monatsrate, Restschuld und Reserve.", next: "Danach kontrollierst du alle Angaben." },
+    { now: "Du prüfst die Zusammenfassung.", why: "Nur bestätigte Angaben fließen in Bewertung und KI-Erklärung ein.", next: "Starte anschließend die Analyse." }
+  ][step - 1];
   const updateAddress = <K extends keyof AnalysisInput["property"]["address"]>(key: K, value: AnalysisInput["property"]["address"][K]) => {
     setInput((current) => ({ ...current, property: { ...current.property, address: { ...current.property.address, [key]: value } } }));
   };
@@ -236,7 +243,8 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
         </div>
       </nav>
 
-      <div className="mt-6 space-y-5">
+      <div className="mt-6 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="min-w-0 space-y-5">
         {step === 1 ? (
           <WizardPanel eyebrow="1 · Dein Ziel" title="Was möchtest du mit der Immobilie erreichen?" description="Diese Auswahl bestimmt, welche Kennzahlen, Förderungen und Steuerhinweise später wichtig sind.">
             <div className="mb-7 rounded-2xl border-2 border-teal/30 bg-mint/60 p-5 dark:border-teal-700 dark:bg-teal-950/40">
@@ -456,6 +464,16 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
             <Button onClick={onRun} disabled={loading} size="lg">{loading ? "Analyse wird berechnet …" : "Kostenlose Analyse starten"}</Button>
           )}
         </div>
+        </div>
+        <aside className="rounded-3xl border border-teal-100 bg-white p-5 shadow-sm dark:border-teal-900 dark:bg-slate-900 xl:sticky xl:top-24" aria-label="KI-Begleitung">
+          <div className="flex items-center gap-2 text-sm font-black text-teal"><span className="relative grid h-9 w-9 place-items-center rounded-xl bg-mint dark:bg-teal-950"><Sparkles size={18} /><span className="absolute -right-1 -top-1 h-2.5 w-2.5 animate-pulse rounded-full bg-teal ring-2 ring-white dark:ring-slate-900" /></span>KI-Begleitung</div>
+          <div className="mt-5 grid gap-3">
+            <section className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800"><h2 className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Was passiert gerade?</h2><p className="mt-2 text-sm leading-6 text-ink dark:text-white">{guide.now}</p></section>
+            <section className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800"><h2 className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Warum ist das wichtig?</h2><p className="mt-2 text-sm leading-6 text-ink dark:text-white">{guide.why}</p></section>
+            <section className="rounded-2xl bg-mint p-4 dark:bg-teal-950"><h2 className="text-xs font-black uppercase tracking-[0.14em] text-teal">Als Nächstes</h2><p className="mt-2 text-sm leading-6 text-teal dark:text-teal-100">{guide.next}</p></section>
+          </div>
+          {loading || analysisStatus ? <div className="mt-4 rounded-2xl border border-teal-100 p-4 dark:border-teal-900"><p className="flex items-center gap-2 text-sm font-bold text-teal"><Sparkles size={16} className="animate-pulse" />KI arbeitet</p><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700"><div className="h-full w-3/4 animate-pulse rounded-full bg-teal" /></div><p className="mt-2 text-xs leading-5 text-slate-500">{analysisStatus || "Deine Angaben werden geprüft und berechnet."}</p></div> : null}
+        </aside>
       </div>
     </div>
   );

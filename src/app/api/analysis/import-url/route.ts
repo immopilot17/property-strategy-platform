@@ -2,6 +2,8 @@ import * as cheerio from "cheerio";
 import { z } from "zod";
 import { contentTypeOf, fetchPublicUrl, PublicUrlFetchError } from "@/lib/http/public-url";
 import { clientAddress, takeRateLimit } from "@/lib/rate-limit";
+import { getRoleAccess } from "@/lib/auth/server";
+import { isFeatureEnabled } from "@/lib/auth/feature-flags";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -417,6 +419,10 @@ function extractProperty(
 }
 
 export async function POST(request: Request) {
+  const access = await getRoleAccess();
+  if (!(await isFeatureEnabled("url_import", access.role))) {
+    return Response.json({ ok: false, message: "Der Inserat-Import ist vorübergehend deaktiviert." }, { status: 503 });
+  }
   const rateLimitKey = `property-url:${clientAddress(request)}`;
   if (!takeRateLimit(rateLimitKey, 10, 60_000)) {
     return Response.json(

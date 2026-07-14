@@ -91,13 +91,15 @@ export function ResultPanel({
   const [accessTier, setAccessTier] = useState<AccessTier>("free");
   const [fundingData, setFundingData] = useState<FundingResponse | null>(null);
   const [tokenBalance, setTokenBalance] = useState(0);
+  const [unlimited, setUnlimited] = useState(false);
 
   useEffect(() => {
     fetch("/api/payments/entitlements")
       .then((response) => response.json())
-      .then((data: { tier?: AccessTier; tokenBalance?: number }) => {
+      .then((data: { tier?: AccessTier; tokenBalance?: number; unlimited?: boolean }) => {
         setAccessTier(data.tier ?? "free");
         setTokenBalance(data.tokenBalance ?? 0);
+        setUnlimited(data.unlimited === true);
       })
       .catch(() => setAccessTier("free"));
   }, []);
@@ -142,7 +144,7 @@ export function ResultPanel({
                 <Bot className="text-teal-200" size={22} aria-hidden="true" />
                 <h3 id="ai-analysis-title" className="text-xl font-black">KI-Analyse zu deinem Ergebnis</h3>
               </div>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Lass Risiken, Annahmen und die nächsten sinnvollen Schritte verständlich einordnen. Verfügbares API-Budget: {new Intl.NumberFormat("de-DE").format(tokenBalance)} Tokens.</p>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Lass Risiken, Annahmen und die nächsten sinnvollen Schritte verständlich einordnen. API-Budget: {unlimited ? "unbegrenzt" : `${new Intl.NumberFormat("de-DE").format(tokenBalance)} Tokens`}.</p>
             </div>
             <Button onClick={onExplain} disabled={aiLoading} variant="secondary" className="shrink-0 border-white/20 bg-white text-ink hover:bg-slate-100">
               <Sparkles size={17} aria-hidden="true" />

@@ -36,6 +36,33 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+  const requiredRole = request.nextUrl.pathname.startsWith("/admin")
+    ? "admin"
+    : request.nextUrl.pathname.startsWith("/dashboard/systemstatus")
+      ? "founder"
+      : null;
+
+  if (requiredRole) {
+    if (!user) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      loginUrl.search = `?next=${encodeURIComponent(request.nextUrl.pathname)}`;
+      const redirect = NextResponse.redirect(loginUrl);
+      response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+      return redirect;
+    }
+
+    const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
+    const allowed = data?.role === "founder" || (requiredRole === "admin" && data?.role === "admin");
+    if (!allowed) {
+      const dashboardUrl = request.nextUrl.clone();
+      dashboardUrl.pathname = "/dashboard";
+      dashboardUrl.search = "";
+      const redirect = NextResponse.redirect(dashboardUrl);
+      response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+      return redirect;
+    }
+  }
   return response;
 }

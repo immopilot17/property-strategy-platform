@@ -134,6 +134,27 @@ export function ResultPanel({
         </div>
       </div>
 
+      {hasTier(accessTier, "starter") ? (
+        <section className="mt-5 rounded-3xl bg-ink p-6 text-white sm:p-8" aria-labelledby="ai-analysis-title">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Bot className="text-teal-200" size={22} aria-hidden="true" />
+                <h3 id="ai-analysis-title" className="text-xl font-black">KI-Analyse zu deinem Ergebnis</h3>
+              </div>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Lass Risiken, Annahmen und die nächsten sinnvollen Schritte verständlich einordnen. Verfügbares API-Budget: {new Intl.NumberFormat("de-DE").format(tokenBalance)} Tokens.</p>
+            </div>
+            <Button onClick={onExplain} disabled={aiLoading} variant="secondary" className="shrink-0 border-white/20 bg-white text-ink hover:bg-slate-100">
+              <Sparkles size={17} aria-hidden="true" />
+              {aiLoading ? "KI-Analyse wird erstellt …" : "KI-Analyse erstellen"}
+            </Button>
+          </div>
+          {aiSummary ? <div className="mt-5 whitespace-pre-wrap rounded-2xl bg-white/[0.08] p-5 text-sm leading-7 text-slate-100"><p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-teal-200">KI-Interpretation</p>{aiSummary}</div> : null}
+        </section>
+      ) : (
+        <div className="mt-5"><Upgrade title="KI-Analyse erstellen" tier="Analyse" description="Der Assistent erklärt Risiken, Annahmen und nächste Schritte anhand deiner Berechnung." /></div>
+      )}
+
       <dl className="mt-5 grid gap-4 md:grid-cols-3">
         <Metric label="Gesamtinvestition" value={eur(result.purchaseCosts.totalInvestmentCosts)} note="Kaufpreis, Nebenkosten und Projektkosten" />
         <Metric label="Monatliche Darlehensrate" value={eur(result.financing.monthlyLoanRate)} note={`Bei ${pct(input.financing.annualInterestRatePercent)} Sollzins`} />
@@ -317,25 +338,23 @@ export function ResultPanel({
           </div>
         </Disclosure>
 
-        <Disclosure title="Erklärung, Speichern und Bericht" description="Konkrete KI-Erklärung, Kontospeicherung und Premium-PDF">
+        <Disclosure title="Speichern und Bericht" description="Kontospeicherung und Premium-PDF">
           {hasTier(accessTier, "starter") ? (
             <div className="rounded-2xl bg-ink p-5 text-white sm:p-6">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                  <div className="flex items-center gap-2"><Bot className="text-teal-200" size={20} aria-hidden="true" /><h3 className="font-bold">Aufgabenbezogener KI-Assistent</h3></div>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Erklärt dieses Ergebnis anhand deiner Berechnung. Verfügbares API-Budget: {new Intl.NumberFormat("de-DE").format(tokenBalance)} Tokens.</p>
+                  <div className="flex items-center gap-2"><Database className="text-teal-200" size={20} aria-hidden="true" /><h3 className="font-bold">Analyse sichern</h3></div>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Speichere das Ergebnis in deinem Konto oder erstelle den vollständigen Bericht.</p>
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                  <Button onClick={onExplain} disabled={aiLoading} variant="secondary" className="border-white/20 bg-white text-ink hover:bg-slate-100"><Sparkles size={17} aria-hidden="true" />{aiLoading ? "Erklärung wird erstellt …" : "Ergebnis erklären"}</Button>
                   <Button onClick={onCloudSave} variant="ghost" className="border border-white/20 text-white hover:bg-white/10"><Database size={17} aria-hidden="true" />Im Konto speichern</Button>
                   {hasTier(accessTier, "premium") ? <Button onClick={handlePdf} variant="ghost" className="border border-teal-400/50 text-teal-100 hover:bg-teal-400/10"><Download size={17} aria-hidden="true" />Gesamtbericht als PDF</Button> : null}
                 </div>
               </div>
               {cloudStatus ? <p className="mt-4 text-sm text-slate-300" aria-live="polite">{cloudStatus}</p> : null}
-              {aiSummary ? <div className="mt-5 whitespace-pre-wrap rounded-2xl bg-white/[0.08] p-5 text-sm leading-7 text-slate-100"><p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-teal-200">KI-Interpretation</p>{aiSummary}</div> : null}
               {!hasTier(accessTier, "premium") ? <p className="mt-4 text-xs text-slate-400">Der vollständige PDF-Bericht mit Analyse, Förderrecherche, Finanzierung und Steuerorientierung ist im Premium-Paket enthalten.</p> : null}
             </div>
-          ) : <Upgrade title="Ergebnis erklären und im Konto speichern" tier="Analyse" description="Der Assistent beantwortet konkrete Fragen zu deiner Analyse und kennzeichnet seine Interpretation klar." />}
+          ) : <Upgrade title="Analyse im Konto speichern" tier="Analyse" description="Speichere deine Ergebnisse und rufe sie später wieder auf." />}
         </Disclosure>
       </section>
 

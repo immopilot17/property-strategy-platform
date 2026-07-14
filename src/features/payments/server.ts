@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { hasTier, type AccessTier } from "./packages";
+import { hasTier, isAccessTier, type AccessTier } from "./packages";
 
 export async function requirePaymentUser() {
   const supabase = await createClient();
@@ -15,22 +15,26 @@ export function appUrl(request: Request) {
 export async function getAccountAccess() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { tier: "free" as AccessTier, user: null, supabase, tokenBalance: 0, tokensUsed: 0 };
-  const [{ data }, { data: balance }] = await Promise.all([
+  if (!user) return { tier: "free" as AccessTier, user: null, supabase, tokenBalance: 0, tokensUsed: 0, unlimited: false };
+  const [{ data: payments }, { data: balance }, { data: profile }] = await Promise.all([
     supabase.from("payments").select("package_code").eq("user_id", user.id).eq("status", "completed"),
-    supabase.from("analysis_credits").select("token_balance,tokens_used").eq("user_id", user.id).maybeSingle()
+    supabase.from("analysis_credits").select("token_balance,tokens_used,is_unlimited").eq("user_id", user.id).maybeSingle(),
+    supabase.from("profiles").select("user_tier").eq("id", user.id).maybeSingle()
   ]);
   const order: AccessTier[] = ["free", "starter", "plus", "pro", "premium"];
-  const tier = (data ?? []).reduce<AccessTier>((highest, payment) => {
+  const paidTier = (payments ?? []).reduce<AccessTier>((highest, payment) => {
     const candidate = payment.package_code as AccessTier;
     return order.indexOf(candidate) > order.indexOf(highest) ? candidate : highest;
   }, "free");
+  const profileTier = isAccessTier(profile?.user_tier) ? profile.user_tier : "free";
+  const tier = profileTier === "founder" || hasTier(profileTier, paidTier) ? profileTier : paidTier;
   return {
     tier,
     user,
     supabase,
     tokenBalance: Number(balance?.token_balance ?? 0),
-    tokensUsed: Number(balance?.tokens_used ?? 0)
+    tokensUsed: Number(balance?.tokens_used ?? 0),
+    unlimited: balance?.is_unlimited === true
   };
 }
 

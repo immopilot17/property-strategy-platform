@@ -3,8 +3,17 @@ create extension if not exists "pgcrypto";
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
+  user_tier text not null default 'free' check (user_tier in ('free', 'starter', 'plus', 'pro', 'premium', 'founder')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+create table if not exists public.founder_users (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text unique not null,
+  name text not null,
+  verified_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.financial_profiles (
@@ -84,6 +93,7 @@ create table if not exists public.analysis_credits (
   credits integer not null default 0,
   token_balance bigint not null default 0,
   tokens_used bigint not null default 0,
+  is_unlimited boolean not null default false,
   updated_at timestamptz not null default now(),
   unique(user_id)
 );
@@ -139,9 +149,12 @@ create table if not exists public.funding_program_versions (
 );
 
 alter table public.profiles enable row level security;
+alter table public.founder_users enable row level security;
 alter table public.financial_profiles enable row level security;
 alter table public.properties enable row level security;
 alter table public.analyses enable row level security;
+alter table public.purchase_strategies enable row level security;
+alter table public.agent_results enable row level security;
 alter table public.analysis_credits enable row level security;
 alter table public.api_usage_events enable row level security;
 alter table public.payments enable row level security;
@@ -149,8 +162,24 @@ alter table public.funding_program_versions enable row level security;
 
 create policy "profiles_owner_all"
 on public.profiles for all
-using (auth.uid() = id)
-with check (auth.uid() = id);
+to authenticated
+using ((select auth.uid()) = id)
+with check ((select auth.uid()) = id);
+
+create policy "founders_read_own_status"
+on public.founder_users for select
+to authenticated
+using ((select auth.uid()) = id);
+
+revoke all on table public.founder_users from anon, authenticated;
+grant select (id, verified_at) on table public.founder_users to authenticated;
+grant select, insert, update, delete on table public.founder_users to service_role;
+
+revoke insert, update on table public.profiles from anon, authenticated;
+grant select on table public.profiles to authenticated;
+grant insert (id, full_name, created_at, updated_at) on table public.profiles to authenticated;
+grant update (full_name, updated_at) on table public.profiles to authenticated;
+grant select, insert, update, delete on table public.profiles to service_role;
 
 create policy "financial_profiles_owner_all"
 on public.financial_profiles for all
@@ -165,12 +194,50 @@ with check ((select auth.uid()) = owner_id);
 
 create policy "analyses_owner_all"
 on public.analyses for all
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+create policy "purchase_strategies_owner_all"
+on public.purchase_strategies for all
+to authenticated
+using (
+  exists (
+    select 1 from public.analyses
+    where analyses.id = purchase_strategies.analysis_id
+      and analyses.user_id = (select auth.uid())
+  )
+)
+with check (
+  exists (
+    select 1 from public.analyses
+    where analyses.id = purchase_strategies.analysis_id
+      and analyses.user_id = (select auth.uid())
+  )
+);
+
+create policy "agent_results_owner_all"
+on public.agent_results for all
+to authenticated
+using (
+  exists (
+    select 1 from public.analyses
+    where analyses.id = agent_results.analysis_id
+      and analyses.user_id = (select auth.uid())
+  )
+)
+with check (
+  exists (
+    select 1 from public.analyses
+    where analyses.id = agent_results.analysis_id
+      and analyses.user_id = (select auth.uid())
+  )
+);
 
 create policy "credits_owner_select"
 on public.analysis_credits for select
-using (auth.uid() = user_id);
+to authenticated
+using ((select auth.uid()) = user_id);
 
 create policy "api_usage_owner_select"
 on public.api_usage_events for select
@@ -182,7 +249,24 @@ grant select, insert, update, delete on table public.api_usage_events to service
 
 create policy "payments_owner_select"
 on public.payments for select
-using (auth.uid() = user_id);
+to authenticated
+using ((select auth.uid()) = user_id);
+
+grant select, insert, update, delete on table public.financial_profiles to authenticated;
+grant select, insert, update, delete on table public.properties to authenticated;
+grant select, insert, update, delete on table public.analyses to authenticated;
+grant select, insert, update, delete on table public.purchase_strategies to authenticated;
+grant select, insert, update, delete on table public.agent_results to authenticated;
+grant select on table public.analysis_credits to authenticated;
+grant select on table public.payments to authenticated;
+
+grant select, insert, update, delete on table public.financial_profiles to service_role;
+grant select, insert, update, delete on table public.properties to service_role;
+grant select, insert, update, delete on table public.analyses to service_role;
+grant select, insert, update, delete on table public.purchase_strategies to service_role;
+grant select, insert, update, delete on table public.agent_results to service_role;
+grant select, insert, update, delete on table public.analysis_credits to service_role;
+grant select, insert, update, delete on table public.payments to service_role;
 
 drop policy if exists "funding_programs_public_read" on public.funding_program_versions;
 

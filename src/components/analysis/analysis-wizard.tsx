@@ -1,7 +1,7 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import { ArrowLeft, ArrowRight, Check, Cloud, Home, Landmark, SearchCheck, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Cloud, Home, Landmark, SearchCheck } from "lucide-react";
 import clsx from "clsx";
 import { LocationFields } from "@/components/location/LocationFields";
 import type { AnalysisInput, PropertyProfile } from "@/features/analysis/domain";
@@ -195,6 +195,10 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
         }
       }
     }));
+    setStep(2);
+    window.setTimeout(() => {
+      document.getElementById("analyse-fortschritt")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
   };
   const moveToStep = (nextStep: number) => {
     setStep(Math.max(1, Math.min(stepLabels.length, nextStep)));
@@ -235,6 +239,12 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
       <div className="mt-6 space-y-5">
         {step === 1 ? (
           <WizardPanel eyebrow="1 · Dein Ziel" title="Was möchtest du mit der Immobilie erreichen?" description="Diese Auswahl bestimmt, welche Kennzahlen, Förderungen und Steuerhinweise später wichtig sind.">
+            <div className="mb-7 rounded-2xl border-2 border-teal/30 bg-mint/60 p-5 dark:border-teal-700 dark:bg-teal-950/40">
+              <p className="font-black text-ink dark:text-white">Direkt mit einem Immobilienlink starten</p>
+              <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">Inserat einfügen, Eckdaten automatisch übernehmen und anschließend kontrollieren.</p>
+              <div className="mt-4"><UrlImporter initialUrl={initialSourceUrl} onImported={handleImported} /></div>
+            </div>
+            <div className="mb-5 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-400"><span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" /><span>oder manuell starten</span><span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" /></div>
             <div className="grid gap-3 lg:grid-cols-3">
               {[
                 { value: "owner_occupation", icon: Home, title: "Selbst einziehen", text: "Bezahlbarkeit, Reserve und Förderungen stehen im Mittelpunkt." },
@@ -259,7 +269,7 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
           <WizardPanel eyebrow="2 · Immobilie" title="Welche Immobilie möchtest du prüfen?" description="Die wichtigsten Eckdaten reichen für den Start. Fehlende Details kannst du später ergänzen.">
             <div className="rounded-2xl border border-slate-200 dark:border-slate-700">
               <Disclosure title="Daten aus einem Link übernehmen" description="Optional: Angebot einlesen und erkannte Werte kontrollieren">
-                <UrlImporter initialUrl={initialSourceUrl} onImported={handleImported} />
+                <UrlImporter onImported={handleImported} />
               </Disclosure>
             </div>
             <div className="mt-6 grid gap-5 sm:grid-cols-2">

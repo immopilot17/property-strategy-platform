@@ -6,6 +6,7 @@ export async function GET() {
     tier: access.tier,
     signedIn: Boolean(access.user),
     tokenBalance: access.tokenBalance,
-    tokensUsed: access.tokensUsed
+    tokensUsed: access.tokensUsed,
+    unlimited: access.unlimited
   });
 }

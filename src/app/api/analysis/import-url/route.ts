@@ -1,7 +1,7 @@
-import { lookup } from "node:dns/promises";
-import { isIP } from "node:net";
 import * as cheerio from "cheerio";
 import { z } from "zod";
+import { contentTypeOf, fetchPublicUrl, PublicUrlFetchError } from "@/lib/http/public-url";
+import { clientAddress, takeRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,180 +36,6 @@ function isRecord(value: unknown): value is JsonRecord {
     value &&
       typeof value === "object" &&
       !Array.isArray(value)
-  );
-}
-
-function isPrivateIpv4(address: string): boolean {
-  const parts = address.split(".").map(Number);
-
-  if (
-    parts.length !== 4 ||
-    parts.some((part) => !Number.isInteger(part))
-  ) {
-    return true;
-  }
-
-  const [a, b] = parts;
-
-  return (
-    a === 0 ||
-    a === 10 ||
-    a === 127 ||
-    (a === 100 && b >= 64 && b <= 127) ||
-    (a === 169 && b === 254) ||
-    (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168) ||
-    (a === 192 && b === 0) ||
-    (a === 192 && b === 2) ||
-    (a === 198 && (b === 18 || b === 19)) ||
-    (a === 198 && b === 51) ||
-    (a === 203 && b === 0) ||
-    a >= 224
-  );
-}
-
-function isPrivateIpv6(address: string): boolean {
-  const normalized = address.toLowerCase();
-
-  if (
-    normalized === "::" ||
-    normalized === "::1" ||
-    normalized.startsWith("fc") ||
-    normalized.startsWith("fd") ||
-    normalized.startsWith("fe8") ||
-    normalized.startsWith("fe9") ||
-    normalized.startsWith("fea") ||
-    normalized.startsWith("feb") ||
-    normalized.startsWith("2001:db8")
-  ) {
-    return true;
-  }
-
-  if (normalized.startsWith("::ffff:")) {
-    const ipv4 = normalized.replace("::ffff:", "");
-
-    if (isIP(ipv4) === 4) {
-      return isPrivateIpv4(ipv4);
-    }
-  }
-
-  return false;
-}
-
-function isPrivateAddress(address: string): boolean {
-  const version = isIP(address);
-
-  if (version === 4) {
-    return isPrivateIpv4(address);
-  }
-
-  if (version === 6) {
-    return isPrivateIpv6(address);
-  }
-
-  return true;
-}
-
-async function validatePublicUrl(rawUrl: string): Promise<URL> {
-  const url = new URL(rawUrl);
-
-  if (!["http:", "https:"].includes(url.protocol)) {
-    throw new Error(
-      "Nur HTTP- und HTTPS-Links werden unterstützt."
-    );
-  }
-
-  if (url.username || url.password) {
-    throw new Error(
-      "Links mit Benutzername oder Passwort sind nicht erlaubt."
-    );
-  }
-
-  const hostname = url.hostname.toLowerCase();
-
-  if (
-    hostname === "localhost" ||
-    hostname.endsWith(".localhost") ||
-    hostname.endsWith(".local") ||
-    hostname.endsWith(".internal")
-  ) {
-    throw new Error("Diese Adresse ist nicht erlaubt.");
-  }
-
-  const addresses = await lookup(hostname, {
-    all: true,
-    verbatim: true
-  });
-
-  if (addresses.length === 0) {
-    throw new Error(
-      "Die Adresse konnte nicht aufgelöst werden."
-    );
-  }
-
-  if (
-    addresses.some((entry) =>
-      isPrivateAddress(entry.address)
-    )
-  ) {
-    throw new Error(
-      "Interne oder private Netzwerkadressen sind nicht erlaubt."
-    );
-  }
-
-  return url;
-}
-
-async function fetchWithSafeRedirects(
-  rawUrl: string
-): Promise<{
-  response: Response;
-  finalUrl: URL;
-}> {
-  let currentUrl = await validatePublicUrl(rawUrl);
-
-  for (let redirectCount = 0; redirectCount <= 4; redirectCount += 1) {
-    const response = await fetch(currentUrl, {
-      method: "GET",
-      redirect: "manual",
-      signal: AbortSignal.timeout(15_000),
-      headers: {
-        Accept:
-          "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
-        "Accept-Language": "de-DE,de;q=0.9,en;q=0.7",
-        "User-Agent":
-          "Mozilla/5.0 (compatible; PropertyStrategyAnalyzer/1.0)"
-      },
-      cache: "no-store"
-    });
-
-    if (
-      response.status >= 300 &&
-      response.status < 400
-    ) {
-      const location = response.headers.get("location");
-
-      if (!location) {
-        throw new Error(
-          "Die Weiterleitung der Immobilienseite ist ungültig."
-        );
-      }
-
-      currentUrl = await validatePublicUrl(
-        new URL(location, currentUrl).toString()
-      );
-
-      continue;
-    }
-
-    return {
-      response,
-      finalUrl: currentUrl
-    };
-  }
-
-  throw new Error(
-    "Die Immobilienseite enthält zu viele Weiterleitungen."
   );
 }
 
@@ -591,15 +417,20 @@ function extractProperty(
 }
 
 export async function POST(request: Request) {
+  const rateLimitKey = `property-url:${clientAddress(request)}`;
+  if (!takeRateLimit(rateLimitKey, 10, 60_000)) {
+    return Response.json(
+      { ok: false, message: "Zu viele Importversuche. Bitte warte eine Minute." },
+      { status: 429, headers: { "Retry-After": "60" } }
+    );
+  }
+
   try {
     const { url } = requestSchema.parse(
       await request.json()
     );
 
-    const {
-      response,
-      finalUrl
-    } = await fetchWithSafeRedirects(url);
+    const response = await fetchPublicUrl(url);
 
     if (response.status === 401 || response.status === 403) {
       return Response.json(
@@ -622,8 +453,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const contentType =
-      response.headers.get("content-type") ?? "";
+    const contentType = contentTypeOf(response.headers);
 
     if (!contentType.includes("text/html")) {
       return Response.json(
@@ -636,27 +466,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const buffer = await response.arrayBuffer();
-
-    if (buffer.byteLength > 2_500_000) {
-      return Response.json(
-        {
-          ok: false,
-          message:
-            "Die Immobilienseite ist zu groß für den automatischen Import."
-        },
-        { status: 413 }
-      );
-    }
-
-    const html = new TextDecoder().decode(buffer);
+    const html = new TextDecoder().decode(response.body);
 
     const {
       property,
       warnings
     } = extractProperty(
       html,
-      finalUrl.toString()
+      response.finalUrl.toString()
     );
 
     return Response.json({
@@ -665,17 +482,19 @@ export async function POST(request: Request) {
       warnings
     });
   } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Der Immobilienlink konnte nicht verarbeitet werden.";
+    const knownError = error instanceof PublicUrlFetchError;
+    const message = knownError
+      ? error.message
+      : error instanceof z.ZodError
+        ? "Bitte gib einen vollständigen HTTP- oder HTTPS-Link ein."
+        : "Der Immobilienlink konnte nicht erreicht werden. Bitte prüfe den Link oder trage die Daten manuell ein.";
 
     return Response.json(
       {
         ok: false,
         message
       },
-      { status: 400 }
+      { status: knownError ? error.status : error instanceof z.ZodError ? 400 : 502 }
     );
   }
 }

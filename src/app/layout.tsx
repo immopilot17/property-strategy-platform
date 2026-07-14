@@ -10,7 +10,10 @@ export const metadata: Metadata = {
     default: "Property Strategy Platform",
     template: "%s | Property Strategy Platform"
   },
-  description: "Anfängerfreundliche Immobilienentscheidungen mit transparenten Berechnungen, Förderinformationen und nachvollziehbaren KI-Erklärungen."
+  description: "Anfängerfreundliche Immobilienentscheidungen mit transparenten Berechnungen, Förderinformationen und nachvollziehbaren KI-Erklärungen.",
+  icons: {
+    icon: "/favicon.svg"
+  }
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

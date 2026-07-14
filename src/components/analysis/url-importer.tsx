@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link2 } from "lucide-react";
 import type { PropertyProfile } from "@/features/analysis/domain";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ export function UrlImporter({ onImported, initialUrl }: { onImported: (property:
   const [warnings, setWarnings] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const importUrl = async (urlToImport = url) => {
+  const importUrl = useCallback(async (urlToImport = url) => {
     setLoading(true);
     setStatus("Immobilienseite wird gelesen …");
     setWarnings([]);
@@ -46,14 +46,14 @@ export function UrlImporter({ onImported, initialUrl }: { onImported: (property:
     } finally {
       setLoading(false);
     }
-  };
+  }, [onImported, url]);
 
   useEffect(() => {
     if (!initialUrl || hasImportedInitialUrl.current) return;
     hasImportedInitialUrl.current = true;
     setUrl(initialUrl);
     void importUrl(initialUrl);
-  }, [initialUrl]);
+  }, [importUrl, initialUrl]);
 
   return (
     <div>

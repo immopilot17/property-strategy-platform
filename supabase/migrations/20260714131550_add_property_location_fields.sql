@@ -43,3 +43,4 @@ using ((select auth.uid()) = owner_id)
 with check ((select auth.uid()) = owner_id);
 
 grant select, insert, update, delete on table public.properties to authenticated;
+grant select, insert, update, delete on table public.properties to service_role;

@@ -34,6 +34,7 @@ Desktop.ini
 *.tsbuildinfo
 next-env.d.ts.next/
 .update-backup-*/
+.playwright-mcp/
 property-strategy-platform-update/
 .vercel
 .env*

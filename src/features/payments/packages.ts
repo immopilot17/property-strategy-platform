@@ -46,7 +46,33 @@ export const paymentPackages = [
 ] as const;
 
 export type PackageCode = (typeof paymentPackages)[number]["code"];
-export function getPaymentPackage(code: string) { return paymentPackages.find((item) => item.code === code); }
-export type AccessTier = "free" | PackageCode;
-const tierOrder: AccessTier[] = ["free", "starter", "plus", "pro", "premium"];
+
+export const founderBenefits = {
+  code: "founder",
+  name: "Gründer",
+  priceCents: 0,
+  credits: Infinity,
+  tokenAllowance: Infinity,
+  audience: "Du bist Gründer der ImmoPilot Plattform.",
+  outcome: "Unbegrenzte Analysen und vollständiger Plattformzugang - kostenlos.",
+  bestFor: "Gründer und Kernteammitglieder.",
+  features: [
+    "Unbegrenzte Analysen und Nutzung",
+    "Alle Plattform-Features kostenlos",
+    "Prioritärer Support",
+    "Beta-Features und neue Funktionen",
+    "Admin-Dashboard",
+    "Export und Reports"
+  ]
+} as const;
+
+export function getPaymentPackage(code: string) {
+  return paymentPackages.find((item) => item.code === code);
+}
+export type AccessTier = "free" | PackageCode | "founder";
+const tierOrder: AccessTier[] = ["free", "starter", "plus", "pro", "premium", "founder"];
 export const hasTier = (current: AccessTier, required: AccessTier) => tierOrder.indexOf(current) >= tierOrder.indexOf(required);
+
+export function isAccessTier(value: unknown): value is AccessTier {
+  return typeof value === "string" && tierOrder.includes(value as AccessTier);
+}

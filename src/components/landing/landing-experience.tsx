@@ -62,7 +62,7 @@ export function LandingExperience() {
   const timerRef = useRef<number | null>(null);
   const current = goals.find((goal) => goal.id === selected) ?? null;
   const currentAnswer = current?.options.find((option) => option.id === answer) ?? null;
-  const progress = currentAnswer ? 100 : current ? 55 : 15;
+  const progress = currentAnswer ? 100 : current ? 50 : 0;
 
   useEffect(() => () => {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
@@ -91,15 +91,19 @@ export function LandingExperience() {
   return (
     <main>
       <section className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
-        <div className="mx-auto grid min-h-[calc(100svh-72px)] max-w-7xl items-center gap-12 px-4 py-14 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:px-8 lg:py-20">
+        <div className="mx-auto grid min-h-[calc(100svh-72px)] max-w-7xl items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[0.82fr_1.18fr] lg:px-8 lg:py-18">
           <div className="max-w-2xl">
-            <h1 className="text-balance text-5xl font-black leading-[0.98] tracking-[-0.055em] text-ink dark:text-white sm:text-6xl lg:text-7xl">Immobilien verstehen. Sicher entscheiden.</h1>
-            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600 dark:text-slate-300">Für Erstkäufer und private Investoren: wenige verständliche Fragen, nachvollziehbare Berechnungen und ein klarer nächster Schritt.</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal dark:text-teal-300">Für Erstkäufer und private Investoren</p>
+            <h1 className="text-balance mt-3 text-4xl font-black leading-[1] tracking-[-0.045em] text-ink dark:text-white sm:text-6xl lg:text-7xl">Immobilien verstehen. Sicher entscheiden.</h1>
+            <p className="mt-5 max-w-xl text-base leading-7 text-slate-600 dark:text-slate-300 sm:text-lg sm:leading-8">Wenige verständliche Fragen, nachvollziehbare Berechnungen und ein klarer nächster Schritt statt unübersichtlicher Tabellen.</p>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <ButtonLink href="#start" size="lg">Analyse starten <ArrowRight size={19} /></ButtonLink>
               <Link href="#so-funktionierts" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-ink transition hover:bg-slate-100 dark:text-white dark:hover:bg-slate-800">So funktioniert’s <ArrowRight size={17} /></Link>
             </div>
-            <p className="mt-5 flex items-center gap-2 text-sm text-slate-500"><ShieldCheck size={17} className="text-teal" />Keine Kreditkarte erforderlich</p>
+            <div className="mt-5 flex flex-wrap gap-3 text-sm text-slate-500">
+              <p className="flex items-center gap-2"><ShieldCheck size={17} className="text-teal" />Keine Kreditkarte erforderlich</p>
+              <p className="flex items-center gap-2"><CheckCircle2 size={17} className="text-teal" />Berechnungen und KI-Hinweise klar getrennt</p>
+            </div>
           </div>
 
           <div id="start" className="scroll-mt-28 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-soft dark:border-slate-700 dark:bg-slate-900">

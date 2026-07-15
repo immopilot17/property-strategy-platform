@@ -274,6 +274,7 @@ export function AnalysisWorkbench() {
         liveCalculation={liveCalculation}
         setInput={setInput}
         errors={errors}
+        setErrors={setErrors}
         loading={loading}
         analysisStatus={analysisStatus}
         initialSourceUrl={initialSourceUrl}

@@ -6,7 +6,7 @@ import clsx from "clsx";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
-export function AuthForm() {
+export function AuthForm({ nextPath = "/dashboard" }: { nextPath?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -22,13 +22,13 @@ export function AuthForm() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback` }
+          options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}` }
         });
-        setMessage(error ? error.message : "Konto erstellt. Bitte bestätige deine E-Mail-Adresse.");
+        setMessage(error ? error.message : "Konto erstellt. Bitte bestätige deine E-Mail-Adresse. Danach leiten wir dich an die gewünschte Stelle weiter.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) setMessage(error.message);
-        else window.location.href = "/dashboard";
+        else window.location.href = nextPath;
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Anmeldung fehlgeschlagen.");
@@ -45,7 +45,7 @@ export function AuthForm() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
           queryParams: { access_type: "offline", prompt: "consent" }
         }
       });

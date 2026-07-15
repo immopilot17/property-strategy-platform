@@ -1,10 +1,10 @@
 "use client";
 
-import type { Dispatch, SetStateAction } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { ArrowLeft, ArrowRight, Check, Cloud, Home, Landmark, SearchCheck, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { LocationFields } from "@/components/location/LocationFields";
-import type { AnalysisInput, CalculationResult, PropertyProfile } from "@/features/analysis/domain";
+import { validateAnalysisInput, type AnalysisInput, type CalculationResult, type PropertyProfile } from "@/features/analysis/domain";
 import { Button } from "@/components/ui/button";
 import { Disclosure } from "@/components/ui/disclosure";
 import { UrlImporter, type ImportedProperty } from "./url-importer";
@@ -19,6 +19,7 @@ type AnalysisWizardProps = {
   liveCalculation: CalculationResult;
   setInput: Dispatch<SetStateAction<AnalysisInput>>;
   errors: ApiError[];
+  setErrors: Dispatch<SetStateAction<ApiError[]>>;
   loading: boolean;
   analysisStatus: string;
   initialSourceUrl: string;
@@ -80,57 +81,127 @@ const occupancyOptions: Option[] = [
 const stepLabels = ["Ziel", "Immobilie", "Haushalt", "Finanzierung", "Prüfen"];
 const currency = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 
-function NumberField({ label, value, onChange, suffix = "€", step = "1", min = "0", hint }: {
+const stepFieldPrefixes: Record<number, string[]> = {
+  1: ["user.purchaseGoal"],
+  2: ["property.title", "property.propertyType", "property.projectType", "property.address.federalState", "property.purchasePrice", "property.livingArea"],
+  3: ["user.maritalStatus", "user.purchaseType", "user.householdNetIncome", "user.monthlyLivingCosts", "user.availableEquity", "user.numberOfChildren", "user.employmentStatus"],
+  4: ["financing.equityForPurchase", "financing.annualInterestRatePercent", "financing.initialRepaymentPercent", "financing.fixedInterestYears", "financing.totalTermYears"],
+  5: ["settings", "financing", "property", "user"]
+};
+
+function findValidationErrors(step: number, input: AnalysisInput): ApiError[] {
+  const validation = validateAnalysisInput(input);
+  if (validation.success) return [];
+
+  const prefixes = stepFieldPrefixes[step] ?? [];
+  return validation.errors.filter((error) => prefixes.some((prefix) => error.field === prefix || error.field.startsWith(`${prefix}.`)));
+}
+
+function NumberField({ label, value, onChange, suffix = "€", step = "1", min = "0", hint, error, fieldKey, allowEmpty = false }: {
   label: string;
   value: number | undefined;
-  onChange: (value: number) => void;
+  onChange: (value: number | undefined) => void;
   suffix?: string;
   step?: string;
   min?: string;
   hint?: string;
+  error?: string;
+  fieldKey?: string;
+  allowEmpty?: boolean;
 }) {
+  const [draft, setDraft] = useState(value === undefined ? "" : String(value));
+
+  useEffect(() => {
+    setDraft(value === undefined ? "" : String(value));
+  }, [value]);
+
+  function commit(rawValue: string) {
+    const trimmed = rawValue.trim();
+    if (trimmed === "") {
+      if (allowEmpty) {
+        onChange(undefined);
+        setDraft("");
+      } else {
+        setDraft(value === undefined ? "" : String(value));
+      }
+      return;
+    }
+
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed)) {
+      setDraft(value === undefined ? "" : String(value));
+      return;
+    }
+
+    onChange(parsed);
+    setDraft(String(parsed));
+  }
+
   return (
     <label className="block">
       <span className="text-sm font-bold text-ink dark:text-slate-100">{label}</span>
       {hint ? <span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">{hint}</span> : null}
-      <span className="mt-2 flex overflow-hidden rounded-xl border border-slate-300 bg-white transition focus-within:border-teal focus-within:ring-4 focus-within:ring-teal-100 dark:border-slate-600 dark:bg-slate-950 dark:focus-within:ring-teal-950">
-        <input type="number" value={value ?? ""} min={min} step={step} onChange={(event) => onChange(Number(event.target.value))} className="min-w-0 flex-1 bg-transparent px-4 py-3 text-ink outline-none dark:text-white" />
+      <span className={clsx("mt-2 flex overflow-hidden rounded-xl border bg-white transition focus-within:ring-4 dark:bg-slate-950", error ? "border-red-300 focus-within:border-red-500 focus-within:ring-red-100 dark:border-red-800 dark:focus-within:border-red-500 dark:focus-within:ring-red-950/60" : "border-slate-300 focus-within:border-teal focus-within:ring-teal-100 dark:border-slate-600 dark:focus-within:ring-teal-950")}>
+        <input
+          type="number"
+          value={draft}
+          min={min}
+          step={step}
+          data-field={fieldKey}
+          aria-invalid={Boolean(error)}
+          onChange={(event) => {
+            const nextValue = event.target.value;
+            setDraft(nextValue);
+            if (!nextValue.trim()) return;
+            const parsed = Number(nextValue);
+            if (Number.isFinite(parsed)) onChange(parsed);
+          }}
+          onBlur={(event) => commit(event.target.value)}
+          className="min-w-0 flex-1 bg-transparent px-4 py-3 text-ink outline-none dark:text-white"
+        />
         {suffix ? <span className="border-l border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{suffix}</span> : null}
       </span>
+      {error ? <span className="mt-2 block text-sm text-red-700 dark:text-red-300">{error}</span> : null}
     </label>
   );
 }
 
-function TextField({ label, value, onChange, type = "text", hint }: {
+function TextField({ label, value, onChange, type = "text", hint, error, fieldKey }: {
   label: string;
   value: string | undefined;
   onChange: (value: string) => void;
   type?: "text" | "url";
   hint?: string;
+  error?: string;
+  fieldKey?: string;
 }) {
   return (
     <label className="block">
       <span className="text-sm font-bold text-ink dark:text-slate-100">{label}</span>
       {hint ? <span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">{hint}</span> : null}
-      <input type={type} value={value ?? ""} onChange={(event) => onChange(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-ink outline-none transition focus:border-teal focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:ring-teal-950" />
+      <input type={type} value={value ?? ""} data-field={fieldKey} aria-invalid={Boolean(error)} onChange={(event) => onChange(event.target.value)} className={clsx("mt-2 w-full rounded-xl border bg-white px-4 py-3 text-ink outline-none transition focus:ring-4 dark:bg-slate-950 dark:text-white", error ? "border-red-300 focus:border-red-500 focus:ring-red-100 dark:border-red-800 dark:focus:border-red-500 dark:focus:ring-red-950/60" : "border-slate-300 focus:border-teal focus:ring-teal-100 dark:border-slate-600 dark:focus:ring-teal-950")} />
+      {error ? <span className="mt-2 block text-sm text-red-700 dark:text-red-300">{error}</span> : null}
     </label>
   );
 }
 
-function SelectField({ label, value, options, onChange, hint }: {
+function SelectField({ label, value, options, onChange, hint, error, fieldKey }: {
   label: string;
   value: string;
   options: Option[];
   onChange: (value: string) => void;
   hint?: string;
+  error?: string;
+  fieldKey?: string;
 }) {
   return (
     <label className="block">
       <span className="text-sm font-bold text-ink dark:text-slate-100">{label}</span>
       {hint ? <span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">{hint}</span> : null}
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-ink outline-none transition focus:border-teal focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:ring-teal-950">
+      <select value={value} data-field={fieldKey} aria-invalid={Boolean(error)} onChange={(event) => onChange(event.target.value)} className={clsx("mt-2 w-full rounded-xl border bg-white px-4 py-3 text-ink outline-none transition focus:ring-4 dark:bg-slate-950 dark:text-white", error ? "border-red-300 focus:border-red-500 focus:ring-red-100 dark:border-red-800 dark:focus:border-red-500 dark:focus:ring-red-950/60" : "border-slate-300 focus:border-teal focus:ring-teal-100 dark:border-slate-600 dark:focus:ring-teal-950")}>
         {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
       </select>
+      {error ? <span className="mt-2 block text-sm text-red-700 dark:text-red-300">{error}</span> : null}
     </label>
   );
 }
@@ -144,16 +215,17 @@ function Toggle({ checked, onChange, children }: { checked: boolean; onChange: (
   );
 }
 
-function ChoiceGroup({ label, value, options, onChange }: { label: string; value: string; options: Option[]; onChange: (value: string) => void }) {
+function ChoiceGroup({ label, value, options, onChange, error, fieldKey }: { label: string; value: string; options: Option[]; onChange: (value: string) => void; error?: string; fieldKey?: string }) {
   return (
-    <fieldset>
+    <fieldset role="radiogroup" aria-invalid={Boolean(error)}>
       <legend className="text-sm font-bold text-ink dark:text-white">{label}</legend>
       <div className="mt-2 grid gap-2 sm:grid-cols-2">
         {options.map((option) => {
           const active = value === option.value;
-          return <button key={option.value} type="button" aria-pressed={active} onClick={() => onChange(option.value)} className={clsx("flex min-h-12 items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-bold transition focus-visible:outline-none", active ? "border-teal bg-mint text-teal ring-2 ring-teal/10 dark:bg-teal-950 dark:text-teal-200" : "border-slate-300 bg-white text-slate-700 hover:border-teal-300 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200")}><span>{option.label}</span>{active ? <Check size={17} aria-hidden="true" /> : null}</button>;
+          return <button key={option.value} type="button" role="radio" aria-checked={active} data-field={fieldKey} onClick={() => onChange(option.value)} className={clsx("flex min-h-12 items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-bold transition focus-visible:outline-none", active ? "border-teal bg-mint text-teal ring-2 ring-teal/10 dark:bg-teal-950 dark:text-teal-200" : error ? "border-red-300 bg-white text-slate-700 hover:border-red-400 dark:border-red-800 dark:bg-slate-950 dark:text-slate-200" : "border-slate-300 bg-white text-slate-700 hover:border-teal-300 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200")}><span>{option.label}</span>{active ? <Check size={17} aria-hidden="true" /> : null}</button>;
         })}
       </div>
+      {error ? <p className="mt-2 text-sm text-red-700 dark:text-red-300">{error}</p> : null}
     </fieldset>
   );
 }
@@ -171,7 +243,7 @@ function WizardPanel({ eyebrow, title, description, children }: { eyebrow: strin
 
 export function AnalysisWizard(props: AnalysisWizardProps) {
   const {
-    step, setStep, input, liveCalculation, setInput, errors, loading, analysisStatus, initialSourceUrl,
+    step, setStep, input, liveCalculation, setInput, errors, setErrors, loading, analysisStatus, initialSourceUrl,
     importText, importStatus, setImportText, onImportText, onRun, onUserChange,
     onPartnerChange, onPropertyChange, onFinancingChange, onSettingsChange
   } = props;
@@ -205,6 +277,12 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
   const updateAddress = <K extends keyof AnalysisInput["property"]["address"]>(key: K, value: AnalysisInput["property"]["address"][K]) => {
     setInput((current) => ({ ...current, property: { ...current.property, address: { ...current.property.address, [key]: value } } }));
   };
+  const fieldError = (...fields: string[]) => errors.find((error) => error.field && fields.includes(error.field))?.message;
+  const focusErrorField = (field?: string) => {
+    if (!field) return;
+    const target = document.querySelector<HTMLElement>(`[data-field="${field}"]`);
+    target?.focus();
+  };
   const handleImported = (imported: ImportedProperty) => {
     setInput((current) => ({
       ...current,
@@ -224,6 +302,15 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
     }, 0);
   };
   const moveToStep = (nextStep: number) => {
+    if (nextStep > step) {
+      const stepErrors = findValidationErrors(step, input);
+      if (stepErrors.length) {
+        setErrors(stepErrors);
+        window.requestAnimationFrame(() => focusErrorField(stepErrors[0]?.field));
+        return;
+      }
+    }
+    setErrors([]);
     setStep(Math.max(1, Math.min(stepLabels.length, nextStep)));
     window.setTimeout(() => {
       document.getElementById("analyse-fortschritt")?.scrollIntoView({
@@ -231,6 +318,16 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
         block: "start"
       });
     }, 0);
+  };
+  const runValidatedAnalysis = () => {
+    const validationErrors = findValidationErrors(5, input);
+    if (validationErrors.length) {
+      setErrors(validationErrors);
+      window.requestAnimationFrame(() => focusErrorField(validationErrors[0]?.field));
+      return;
+    }
+    setErrors([]);
+    onRun();
   };
 
   return (
@@ -278,7 +375,7 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
                 const Icon = choice.icon;
                 const active = input.user.purchaseGoal === choice.value;
                 return (
-                  <button key={choice.value} type="button" aria-pressed={active} onClick={() => onUserChange("purchaseGoal", choice.value as AnalysisInput["user"]["purchaseGoal"])} className={clsx("rounded-2xl border p-5 text-left transition focus-visible:outline-none", active ? "border-teal bg-mint ring-2 ring-teal/10 dark:bg-teal-950" : "border-slate-200 hover:border-teal-300 dark:border-slate-700 dark:hover:border-teal-700")}>
+                  <button key={choice.value} type="button" role="radio" data-field="user.purchaseGoal" aria-checked={active} onClick={() => onUserChange("purchaseGoal", choice.value as AnalysisInput["user"]["purchaseGoal"])} className={clsx("rounded-2xl border p-5 text-left transition focus-visible:outline-none", active ? "border-teal bg-mint ring-2 ring-teal/10 dark:bg-teal-950" : fieldError("user.purchaseGoal") ? "border-red-300 hover:border-red-400 dark:border-red-800 dark:hover:border-red-700" : "border-slate-200 hover:border-teal-300 dark:border-slate-700 dark:hover:border-teal-700")}>
                     <span className={clsx("grid h-11 w-11 place-items-center rounded-xl", active ? "bg-teal text-white" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300")}><Icon size={22} aria-hidden="true" /></span>
                     <span className="mt-5 block font-bold text-ink dark:text-white">{choice.title}</span>
                     <span className="mt-2 block text-sm leading-6 text-slate-600 dark:text-slate-300">{choice.text}</span>
@@ -286,6 +383,7 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
                 );
               })}
             </div>
+            {fieldError("user.purchaseGoal") ? <p className="mt-3 text-sm text-red-700 dark:text-red-300">{fieldError("user.purchaseGoal")}</p> : null}
           </WizardPanel>
         ) : null}
 
@@ -297,13 +395,13 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
               </Disclosure>
             </div>
             <div className="mt-6 grid gap-5 sm:grid-cols-2">
-              <div className="sm:col-span-2"><TextField label="Bezeichnung der Immobilie" value={input.property.title} onChange={(value) => onPropertyChange("title", value)} /></div>
-              <SelectField label="Immobilientyp" value={input.property.propertyType} options={propertyOptions} onChange={(value) => onPropertyChange("propertyType", value as AnalysisInput["property"]["propertyType"])} />
-              <ChoiceGroup label="Vorhaben" value={input.property.projectType} options={[{ value: "new_build", label: "Neubau" }, { value: "existing", label: "Bestand" }]} onChange={(value) => onPropertyChange("projectType", value as AnalysisInput["property"]["projectType"])} />
-              <TextField label="Bundesland" value={input.property.address.federalState} onChange={(value) => updateAddress("federalState", value)} hint="Wichtig für Kaufnebenkosten und Landesförderungen" />
-              <NumberField label="Kaufpreis" value={input.property.purchasePrice} onChange={(value) => onPropertyChange("purchasePrice", value)} />
-              <NumberField label="Wohnfläche" value={input.property.livingArea} onChange={(value) => onPropertyChange("livingArea", value)} suffix="m²" step="0.1" />
-              {input.user.purchaseGoal !== "owner_occupation" ? <NumberField label="Monatliche Kaltmiete" value={input.property.monthlyColdRent} onChange={(value) => onPropertyChange("monthlyColdRent", value)} /> : null}
+              <div className="sm:col-span-2"><TextField label="Bezeichnung der Immobilie" value={input.property.title} onChange={(value) => onPropertyChange("title", value)} error={fieldError("property.title")} fieldKey="property.title" /></div>
+              <SelectField label="Immobilientyp" value={input.property.propertyType} options={propertyOptions} onChange={(value) => onPropertyChange("propertyType", value as AnalysisInput["property"]["propertyType"])} error={fieldError("property.propertyType")} fieldKey="property.propertyType" />
+              <ChoiceGroup label="Vorhaben" value={input.property.projectType} options={[{ value: "new_build", label: "Neubau" }, { value: "existing", label: "Bestand" }]} onChange={(value) => onPropertyChange("projectType", value as AnalysisInput["property"]["projectType"])} error={fieldError("property.projectType")} fieldKey="property.projectType" />
+              <TextField label="Bundesland" value={input.property.address.federalState} onChange={(value) => updateAddress("federalState", value)} hint="Wichtig für Kaufnebenkosten und Landesförderungen" error={fieldError("property.address.federalState")} fieldKey="property.address.federalState" />
+              <NumberField label="Kaufpreis" value={input.property.purchasePrice} onChange={(value) => onPropertyChange("purchasePrice", value ?? input.property.purchasePrice)} error={fieldError("property.purchasePrice")} fieldKey="property.purchasePrice" />
+              <NumberField label="Wohnfläche" value={input.property.livingArea} onChange={(value) => onPropertyChange("livingArea", value ?? input.property.livingArea)} suffix="m²" step="0.1" error={fieldError("property.livingArea")} fieldKey="property.livingArea" />
+              {input.user.purchaseGoal !== "owner_occupation" ? <NumberField label="Monatliche Kaltmiete" value={input.property.monthlyColdRent} onChange={(value) => onPropertyChange("monthlyColdRent", value ?? input.property.monthlyColdRent)} /> : null}
               <SelectField label="Nutzung heute" value={input.property.occupancyType} options={occupancyOptions} onChange={(value) => onPropertyChange("occupancyType", value as AnalysisInput["property"]["occupancyType"])} />
             </div>
 
@@ -334,19 +432,19 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
               <Disclosure title="Weitere Immobiliendetails" description="Kosten, Adresse, Fläche und Mietannahmen">
                 <div className="grid gap-5 sm:grid-cols-2">
                   <TextField label="Quell-URL" value={input.property.sourceUrl} onChange={(value) => onPropertyChange("sourceUrl", value || undefined)} type="url" />
-                  <NumberField label="Grundstück" value={input.property.landArea} onChange={(value) => onPropertyChange("landArea", value)} suffix="m²" step="0.1" />
-                  <NumberField label="Einheiten" value={input.property.numberOfUnits} onChange={(value) => onPropertyChange("numberOfUnits", value)} suffix="" />
-                  <NumberField label="Baujahr" value={input.property.yearBuilt} onChange={(value) => onPropertyChange("yearBuilt", value || undefined)} suffix="" min="1800" />
-                  <NumberField label="Hausgeld" value={input.property.monthlyHouseMoney} onChange={(value) => onPropertyChange("monthlyHouseMoney", value)} />
-                  <NumberField label="Nicht umlagefähige Kosten" value={input.property.monthlyNonRecoverableCosts} onChange={(value) => onPropertyChange("monthlyNonRecoverableCosts", value)} />
-                  <NumberField label="Renovierung" value={input.property.renovationCosts} onChange={(value) => onPropertyChange("renovationCosts", value)} />
-                  <NumberField label="Modernisierung" value={input.property.modernizationCosts} onChange={(value) => onPropertyChange("modernizationCosts", value)} />
-                  <NumberField label="Ausstattung" value={input.property.furnishingCosts} onChange={(value) => onPropertyChange("furnishingCosts", value)} />
-                  <NumberField label="Grunderwerbsteuer" value={input.property.realEstateTransferTaxPercent} onChange={(value) => onPropertyChange("realEstateTransferTaxPercent", value)} suffix="%" step="0.01" />
-                  <NumberField label="Notar und Grundbuch" value={input.property.notaryAndLandRegistryPercent} onChange={(value) => onPropertyChange("notaryAndLandRegistryPercent", value)} suffix="%" step="0.01" />
-                  <NumberField label="Maklerprovision" value={input.property.brokerCommissionPercent} onChange={(value) => onPropertyChange("brokerCommissionPercent", value)} suffix="%" step="0.01" />
-                  <NumberField label="Erwarteter Leerstand" value={input.property.expectedVacancyPercent} onChange={(value) => onPropertyChange("expectedVacancyPercent", value)} suffix="%" step="0.1" />
-                  <NumberField label="Instandhaltung jährlich" value={input.property.annualMaintenancePercent} onChange={(value) => onPropertyChange("annualMaintenancePercent", value)} suffix="%" step="0.1" />
+                  <NumberField label="Grundstück" value={input.property.landArea} onChange={(value) => onPropertyChange("landArea", value ?? input.property.landArea)} suffix="m²" step="0.1" />
+                  <NumberField label="Einheiten" value={input.property.numberOfUnits} onChange={(value) => onPropertyChange("numberOfUnits", value ?? input.property.numberOfUnits)} suffix="" />
+                  <NumberField label="Baujahr" value={input.property.yearBuilt} onChange={(value) => onPropertyChange("yearBuilt", value)} suffix="" min="1800" allowEmpty />
+                  <NumberField label="Hausgeld" value={input.property.monthlyHouseMoney} onChange={(value) => onPropertyChange("monthlyHouseMoney", value ?? input.property.monthlyHouseMoney)} />
+                  <NumberField label="Nicht umlagefähige Kosten" value={input.property.monthlyNonRecoverableCosts} onChange={(value) => onPropertyChange("monthlyNonRecoverableCosts", value ?? input.property.monthlyNonRecoverableCosts)} />
+                  <NumberField label="Renovierung" value={input.property.renovationCosts} onChange={(value) => onPropertyChange("renovationCosts", value ?? input.property.renovationCosts)} />
+                  <NumberField label="Modernisierung" value={input.property.modernizationCosts} onChange={(value) => onPropertyChange("modernizationCosts", value ?? input.property.modernizationCosts)} />
+                  <NumberField label="Ausstattung" value={input.property.furnishingCosts} onChange={(value) => onPropertyChange("furnishingCosts", value ?? input.property.furnishingCosts)} />
+                  <NumberField label="Grunderwerbsteuer" value={input.property.realEstateTransferTaxPercent} onChange={(value) => onPropertyChange("realEstateTransferTaxPercent", value ?? input.property.realEstateTransferTaxPercent)} suffix="%" step="0.01" />
+                  <NumberField label="Notar und Grundbuch" value={input.property.notaryAndLandRegistryPercent} onChange={(value) => onPropertyChange("notaryAndLandRegistryPercent", value ?? input.property.notaryAndLandRegistryPercent)} suffix="%" step="0.01" />
+                  <NumberField label="Maklerprovision" value={input.property.brokerCommissionPercent} onChange={(value) => onPropertyChange("brokerCommissionPercent", value ?? input.property.brokerCommissionPercent)} suffix="%" step="0.01" />
+                  <NumberField label="Erwarteter Leerstand" value={input.property.expectedVacancyPercent} onChange={(value) => onPropertyChange("expectedVacancyPercent", value ?? input.property.expectedVacancyPercent)} suffix="%" step="0.1" />
+                  <NumberField label="Instandhaltung jährlich" value={input.property.annualMaintenancePercent} onChange={(value) => onPropertyChange("annualMaintenancePercent", value ?? input.property.annualMaintenancePercent)} suffix="%" step="0.1" />
                 </div>
               </Disclosure>
               <Disclosure title="Exposé-Text auswerten" description="Optional: Daten aus kopiertem Text erkennen">
@@ -364,27 +462,27 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
         {step === 3 ? (
           <WizardPanel eyebrow="3 · Haushalt" title="Was ist für deinen Haushalt realistisch?" description="Wir berechnen Einkommen, laufende Belastungen und Eigenkapital bei einem gemeinsamen Kauf zusammen.">
             <div className="grid gap-5 sm:grid-cols-2">
-              <SelectField label="Familienstand" value={input.user.maritalStatus} options={maritalOptions} onChange={(value) => onUserChange("maritalStatus", value as AnalysisInput["user"]["maritalStatus"])} />
-              <ChoiceGroup label="Kaufart" value={input.user.purchaseType} options={[{ value: "alone", label: "Allein kaufen" }, { value: "joint", label: "Gemeinsam kaufen" }]} onChange={(value) => onUserChange("purchaseType", value as AnalysisInput["user"]["purchaseType"])} />
-              <NumberField label="Dein monatliches Nettoeinkommen" value={input.user.householdNetIncome} onChange={(value) => onUserChange("householdNetIncome", value)} />
-              <NumberField label="Monatliche Lebenshaltung" value={input.user.monthlyLivingCosts} onChange={(value) => onUserChange("monthlyLivingCosts", value)} hint="Ohne neue Immobilienrate" />
-              <NumberField label="Bestehende Kreditraten" value={input.user.existingLoanPayments} onChange={(value) => onUserChange("existingLoanPayments", value)} />
-              <NumberField label="Verfügbares Eigenkapital" value={input.user.availableEquity} onChange={(value) => onUserChange("availableEquity", value)} />
-              <NumberField label="Kinder im Haushalt" value={input.user.numberOfChildren} onChange={(value) => onUserChange("numberOfChildren", value)} suffix="" />
-              <SelectField label="Beschäftigung" value={input.user.employmentStatus} options={employmentOptions} onChange={(value) => onUserChange("employmentStatus", value as AnalysisInput["user"]["employmentStatus"])} />
+              <SelectField label="Familienstand" value={input.user.maritalStatus} options={maritalOptions} onChange={(value) => onUserChange("maritalStatus", value as AnalysisInput["user"]["maritalStatus"])} error={fieldError("user.maritalStatus")} fieldKey="user.maritalStatus" />
+              <ChoiceGroup label="Kaufart" value={input.user.purchaseType} options={[{ value: "alone", label: "Allein kaufen" }, { value: "joint", label: "Gemeinsam kaufen" }]} onChange={(value) => onUserChange("purchaseType", value as AnalysisInput["user"]["purchaseType"])} error={fieldError("user.purchaseType")} fieldKey="user.purchaseType" />
+              <NumberField label="Dein monatliches Nettoeinkommen" value={input.user.householdNetIncome} onChange={(value) => onUserChange("householdNetIncome", value ?? input.user.householdNetIncome)} error={fieldError("user.householdNetIncome")} fieldKey="user.householdNetIncome" />
+              <NumberField label="Monatliche Lebenshaltung" value={input.user.monthlyLivingCosts} onChange={(value) => onUserChange("monthlyLivingCosts", value ?? input.user.monthlyLivingCosts)} hint="Ohne neue Immobilienrate" error={fieldError("user.monthlyLivingCosts")} fieldKey="user.monthlyLivingCosts" />
+              <NumberField label="Bestehende Kreditraten" value={input.user.existingLoanPayments} onChange={(value) => onUserChange("existingLoanPayments", value ?? input.user.existingLoanPayments)} />
+              <NumberField label="Verfügbares Eigenkapital" value={input.user.availableEquity} onChange={(value) => onUserChange("availableEquity", value ?? input.user.availableEquity)} error={fieldError("user.availableEquity")} fieldKey="user.availableEquity" />
+              <NumberField label="Kinder im Haushalt" value={input.user.numberOfChildren} onChange={(value) => onUserChange("numberOfChildren", value ?? input.user.numberOfChildren)} suffix="" error={fieldError("user.numberOfChildren")} fieldKey="user.numberOfChildren" />
+              <SelectField label="Beschäftigung" value={input.user.employmentStatus} options={employmentOptions} onChange={(value) => onUserChange("employmentStatus", value as AnalysisInput["user"]["employmentStatus"])} error={fieldError("user.employmentStatus")} fieldKey="user.employmentStatus" />
             </div>
 
             {partner ? (
               <div className="mt-7 rounded-2xl border border-slate-200 dark:border-slate-700">
                 <Disclosure title="Partnerdaten ergänzen" description="Optional, verbessert aber die gemeinsame Haushaltsrechnung">
                   <div className="grid gap-5 sm:grid-cols-2">
-                    <NumberField label="Nettoeinkommen Partner" value={partner.monthlyNetIncome} onChange={(value) => onPartnerChange("monthlyNetIncome", value)} />
-                    <NumberField label="Zusätzliche Einnahmen Partner" value={partner.additionalMonthlyIncome} onChange={(value) => onPartnerChange("additionalMonthlyIncome", value)} />
+                    <NumberField label="Nettoeinkommen Partner" value={partner.monthlyNetIncome} onChange={(value) => onPartnerChange("monthlyNetIncome", value ?? partner.monthlyNetIncome)} />
+                    <NumberField label="Zusätzliche Einnahmen Partner" value={partner.additionalMonthlyIncome} onChange={(value) => onPartnerChange("additionalMonthlyIncome", value ?? partner.additionalMonthlyIncome)} />
                     <SelectField label="Beschäftigung Partner" value={partner.employmentStatus} options={employmentOptions} onChange={(value) => onPartnerChange("employmentStatus", value as NonNullable<AnalysisInput["user"]["partner"]>["employmentStatus"])} />
-                    <NumberField label="Kreditraten Partner" value={partner.existingLoanPayments} onChange={(value) => onPartnerChange("existingLoanPayments", value)} />
-                    <NumberField label="Eigenkapital Partner" value={partner.availableEquity} onChange={(value) => onPartnerChange("availableEquity", value)} />
-                    <NumberField label="Jahresbrutto Partner" value={partner.annualGrossIncome} onChange={(value) => onPartnerChange("annualGrossIncome", value)} />
-                    <NumberField label="Grenzsteuersatz Partner" value={partner.marginalTaxRatePercent} onChange={(value) => onPartnerChange("marginalTaxRatePercent", value)} suffix="%" step="0.1" />
+                    <NumberField label="Kreditraten Partner" value={partner.existingLoanPayments} onChange={(value) => onPartnerChange("existingLoanPayments", value ?? partner.existingLoanPayments)} />
+                    <NumberField label="Eigenkapital Partner" value={partner.availableEquity} onChange={(value) => onPartnerChange("availableEquity", value ?? partner.availableEquity)} />
+                    <NumberField label="Jahresbrutto Partner" value={partner.annualGrossIncome} onChange={(value) => onPartnerChange("annualGrossIncome", value ?? partner.annualGrossIncome)} />
+                    <NumberField label="Grenzsteuersatz Partner" value={partner.marginalTaxRatePercent} onChange={(value) => onPartnerChange("marginalTaxRatePercent", value ?? partner.marginalTaxRatePercent)} suffix="%" step="0.1" />
                   </div>
                 </Disclosure>
               </div>
@@ -399,13 +497,13 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
             <div className="mt-7 rounded-2xl border border-slate-200 dark:border-slate-700">
               <Disclosure title="Weitere Haushalts- und Steuerdaten" description="Reserve, Bruttoeinkommen und persönliches Risikoprofil">
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <NumberField label="Zusätzliche Einnahmen" value={input.user.additionalMonthlyIncome} onChange={(value) => onUserChange("additionalMonthlyIncome", value)} />
-                  <NumberField label="Notfallreserve" value={input.user.emergencyReserve} onChange={(value) => onUserChange("emergencyReserve", value)} />
-                  <NumberField label="Gewünschte Restreserve" value={input.user.desiredRemainingReserve} onChange={(value) => onUserChange("desiredRemainingReserve", value)} />
-                  <NumberField label="Maximale Monatsrate" value={input.user.plannedMonthlyMaximumRate} onChange={(value) => onUserChange("plannedMonthlyMaximumRate", value)} />
-                  <NumberField label="Erwachsene" value={input.user.numberOfAdults} onChange={(value) => onUserChange("numberOfAdults", value)} suffix="" />
-                  <NumberField label="Jahresbrutto" value={input.user.annualGrossIncome} onChange={(value) => onUserChange("annualGrossIncome", value)} />
-                  <NumberField label="Grenzsteuersatz" value={input.user.marginalTaxRatePercent} onChange={(value) => onUserChange("marginalTaxRatePercent", value)} suffix="%" step="0.1" hint="Nur für die unverbindliche Steuerschätzung" />
+                  <NumberField label="Zusätzliche Einnahmen" value={input.user.additionalMonthlyIncome} onChange={(value) => onUserChange("additionalMonthlyIncome", value ?? input.user.additionalMonthlyIncome)} />
+                  <NumberField label="Notfallreserve" value={input.user.emergencyReserve} onChange={(value) => onUserChange("emergencyReserve", value ?? input.user.emergencyReserve)} />
+                  <NumberField label="Gewünschte Restreserve" value={input.user.desiredRemainingReserve} onChange={(value) => onUserChange("desiredRemainingReserve", value ?? input.user.desiredRemainingReserve)} />
+                  <NumberField label="Maximale Monatsrate" value={input.user.plannedMonthlyMaximumRate} onChange={(value) => onUserChange("plannedMonthlyMaximumRate", value ?? input.user.plannedMonthlyMaximumRate)} />
+                  <NumberField label="Erwachsene" value={input.user.numberOfAdults} onChange={(value) => onUserChange("numberOfAdults", value ?? input.user.numberOfAdults)} suffix="" />
+                  <NumberField label="Jahresbrutto" value={input.user.annualGrossIncome} onChange={(value) => onUserChange("annualGrossIncome", value ?? input.user.annualGrossIncome)} />
+                  <NumberField label="Grenzsteuersatz" value={input.user.marginalTaxRatePercent} onChange={(value) => onUserChange("marginalTaxRatePercent", value ?? input.user.marginalTaxRatePercent)} suffix="%" step="0.1" hint="Nur für die unverbindliche Steuerschätzung" />
                   <SelectField label="Risikoprofil" value={input.user.riskPreference} options={[{ value: "conservative", label: "Sicherheitsorientiert" }, { value: "balanced", label: "Ausgewogen" }, { value: "growth", label: "Wachstumsorientiert" }]} onChange={(value) => onUserChange("riskPreference", value as AnalysisInput["user"]["riskPreference"])} />
                 </div>
               </Disclosure>
@@ -416,19 +514,19 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
         {step === 4 ? (
           <WizardPanel eyebrow="4 · Finanzierung" title="Wie soll der Kauf finanziert werden?" description="Wenn du noch kein Angebot hast, nutze realistische Annahmen. Du kannst sie später jederzeit ändern.">
             <div className="grid gap-5 sm:grid-cols-2">
-              <NumberField label="Eigenkapital für diesen Kauf" value={input.financing.equityForPurchase} onChange={(value) => onFinancingChange("equityForPurchase", value)} />
-              <NumberField label="Sollzins pro Jahr" value={input.financing.annualInterestRatePercent} onChange={(value) => onFinancingChange("annualInterestRatePercent", value)} suffix="%" step="0.01" />
-              <NumberField label="Anfängliche Tilgung pro Jahr" value={input.financing.initialRepaymentPercent} onChange={(value) => onFinancingChange("initialRepaymentPercent", value)} suffix="%" step="0.01" />
-              <NumberField label="Zinsbindung" value={input.financing.fixedInterestYears} onChange={(value) => onFinancingChange("fixedInterestYears", value)} suffix="Jahre" />
+              <NumberField label="Eigenkapital für diesen Kauf" value={input.financing.equityForPurchase} onChange={(value) => onFinancingChange("equityForPurchase", value ?? input.financing.equityForPurchase)} error={fieldError("financing.equityForPurchase")} fieldKey="financing.equityForPurchase" />
+              <NumberField label="Sollzins pro Jahr" value={input.financing.annualInterestRatePercent} onChange={(value) => onFinancingChange("annualInterestRatePercent", value ?? input.financing.annualInterestRatePercent)} suffix="%" step="0.01" error={fieldError("financing.annualInterestRatePercent")} fieldKey="financing.annualInterestRatePercent" />
+              <NumberField label="Anfängliche Tilgung pro Jahr" value={input.financing.initialRepaymentPercent} onChange={(value) => onFinancingChange("initialRepaymentPercent", value ?? input.financing.initialRepaymentPercent)} suffix="%" step="0.01" error={fieldError("financing.initialRepaymentPercent")} fieldKey="financing.initialRepaymentPercent" />
+              <NumberField label="Zinsbindung" value={input.financing.fixedInterestYears} onChange={(value) => onFinancingChange("fixedInterestYears", value ?? input.financing.fixedInterestYears)} suffix="Jahre" error={fieldError("financing.fixedInterestYears")} fieldKey="financing.fixedInterestYears" />
             </div>
             <div className="mt-7 rounded-2xl border border-slate-200 dark:border-slate-700">
               <Disclosure title="Finanzierung verfeinern" description="Laufzeit, Sondertilgung und Anschlusszins">
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <NumberField label="Gesamtlaufzeit" value={input.financing.totalTermYears} onChange={(value) => onFinancingChange("totalTermYears", value)} suffix="Jahre" />
-                  <NumberField label="Zusätzliche Monatszahlung" value={input.financing.additionalMonthlyPayment} onChange={(value) => onFinancingChange("additionalMonthlyPayment", value)} />
-                  <NumberField label="Jährliche Sondertilgung" value={input.financing.annualSpecialRepaymentPercent} onChange={(value) => onFinancingChange("annualSpecialRepaymentPercent", value)} suffix="%" step="0.01" />
-                  <NumberField label="Erwarteter Anschlusszins" value={input.financing.expectedInterestAfterFixedPeriodPercent} onChange={(value) => onFinancingChange("expectedInterestAfterFixedPeriodPercent", value)} suffix="%" step="0.01" />
-                  <NumberField label="Maximaler Beleihungsauslauf" value={input.financing.desiredMaximumLoanToValuePercent} onChange={(value) => onFinancingChange("desiredMaximumLoanToValuePercent", value)} suffix="%" step="0.1" />
+                  <NumberField label="Gesamtlaufzeit" value={input.financing.totalTermYears} onChange={(value) => onFinancingChange("totalTermYears", value ?? input.financing.totalTermYears)} suffix="Jahre" error={fieldError("financing.totalTermYears")} fieldKey="financing.totalTermYears" />
+                  <NumberField label="Zusätzliche Monatszahlung" value={input.financing.additionalMonthlyPayment} onChange={(value) => onFinancingChange("additionalMonthlyPayment", value ?? input.financing.additionalMonthlyPayment)} />
+                  <NumberField label="Jährliche Sondertilgung" value={input.financing.annualSpecialRepaymentPercent} onChange={(value) => onFinancingChange("annualSpecialRepaymentPercent", value ?? input.financing.annualSpecialRepaymentPercent)} suffix="%" step="0.01" />
+                  <NumberField label="Erwarteter Anschlusszins" value={input.financing.expectedInterestAfterFixedPeriodPercent} onChange={(value) => onFinancingChange("expectedInterestAfterFixedPeriodPercent", value)} suffix="%" step="0.01" allowEmpty />
+                  <NumberField label="Maximaler Beleihungsauslauf" value={input.financing.desiredMaximumLoanToValuePercent} onChange={(value) => onFinancingChange("desiredMaximumLoanToValuePercent", value ?? input.financing.desiredMaximumLoanToValuePercent)} suffix="%" step="0.1" />
                   <Toggle checked={input.financing.includePurchaseCostsInLoan} onChange={(checked) => onFinancingChange("includePurchaseCostsInLoan", checked)}>Kaufnebenkosten mitfinanzieren</Toggle>
                   <Toggle checked={input.financing.includeRenovationInLoan} onChange={(checked) => onFinancingChange("includeRenovationInLoan", checked)}>Projektkosten mitfinanzieren</Toggle>
                 </div>
@@ -447,14 +545,14 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
             <div className="mt-7 rounded-2xl border border-slate-200 dark:border-slate-700">
               <Disclosure title="Steuer- und Prognoseannahmen prüfen" description="Alle Ergebnisse sind Schätzungen und ersetzen keine Beratung">
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <NumberField label="Gebäudeanteil" value={input.settings.buildingValueSharePercent} onChange={(value) => onSettingsChange("buildingValueSharePercent", value)} suffix="%" step="0.1" />
-                  <NumberField label="AfA-Satz" value={input.settings.depreciationRatePercent} onChange={(value) => onSettingsChange("depreciationRatePercent", value)} suffix="%" step="0.1" />
-                  <NumberField label="Grenzsteuersatz" value={input.settings.marginalTaxRatePercent} onChange={(value) => onSettingsChange("marginalTaxRatePercent", value)} suffix="%" step="0.1" />
-                  <NumberField label="Wertentwicklung jährlich" value={input.settings.annualPropertyValueGrowthPercent} onChange={(value) => onSettingsChange("annualPropertyValueGrowthPercent", value)} suffix="%" step="0.1" min="-20" />
-                  <NumberField label="Mietentwicklung jährlich" value={input.settings.annualRentGrowthPercent} onChange={(value) => onSettingsChange("annualRentGrowthPercent", value)} suffix="%" step="0.1" min="-20" />
-                  <NumberField label="Kostensteigerung jährlich" value={input.settings.annualCostGrowthPercent} onChange={(value) => onSettingsChange("annualCostGrowthPercent", value)} suffix="%" step="0.1" min="-20" />
-                  <NumberField label="Sicherheitsabschlag Einkommen" value={input.settings.incomeSafetyReductionPercent} onChange={(value) => onSettingsChange("incomeSafetyReductionPercent", value)} suffix="%" step="0.1" />
-                  <NumberField label="Prognosezeitraum" value={input.settings.projectionYears} onChange={(value) => onSettingsChange("projectionYears", value)} suffix="Jahre" />
+                  <NumberField label="Gebäudeanteil" value={input.settings.buildingValueSharePercent} onChange={(value) => onSettingsChange("buildingValueSharePercent", value ?? input.settings.buildingValueSharePercent)} suffix="%" step="0.1" />
+                  <NumberField label="AfA-Satz" value={input.settings.depreciationRatePercent} onChange={(value) => onSettingsChange("depreciationRatePercent", value ?? input.settings.depreciationRatePercent)} suffix="%" step="0.1" />
+                  <NumberField label="Grenzsteuersatz" value={input.settings.marginalTaxRatePercent} onChange={(value) => onSettingsChange("marginalTaxRatePercent", value ?? input.settings.marginalTaxRatePercent)} suffix="%" step="0.1" />
+                  <NumberField label="Wertentwicklung jährlich" value={input.settings.annualPropertyValueGrowthPercent} onChange={(value) => onSettingsChange("annualPropertyValueGrowthPercent", value ?? input.settings.annualPropertyValueGrowthPercent)} suffix="%" step="0.1" min="-20" />
+                  <NumberField label="Mietentwicklung jährlich" value={input.settings.annualRentGrowthPercent} onChange={(value) => onSettingsChange("annualRentGrowthPercent", value ?? input.settings.annualRentGrowthPercent)} suffix="%" step="0.1" min="-20" />
+                  <NumberField label="Kostensteigerung jährlich" value={input.settings.annualCostGrowthPercent} onChange={(value) => onSettingsChange("annualCostGrowthPercent", value ?? input.settings.annualCostGrowthPercent)} suffix="%" step="0.1" min="-20" />
+                  <NumberField label="Sicherheitsabschlag Einkommen" value={input.settings.incomeSafetyReductionPercent} onChange={(value) => onSettingsChange("incomeSafetyReductionPercent", value ?? input.settings.incomeSafetyReductionPercent)} suffix="%" step="0.1" />
+                  <NumberField label="Prognosezeitraum" value={input.settings.projectionYears} onChange={(value) => onSettingsChange("projectionYears", value ?? input.settings.projectionYears)} suffix="Jahre" />
                   <Toggle checked={input.settings.calculateTaxScenario} onChange={(checked) => onSettingsChange("calculateTaxScenario", checked)}>Steuerliche Orientierung berechnen</Toggle>
                   <Toggle checked={input.settings.calculateSubsidyScenario} onChange={(checked) => onSettingsChange("calculateSubsidyScenario", checked)}>Fördermöglichkeiten prüfen</Toggle>
                 </div>
@@ -477,7 +575,7 @@ export function AnalysisWizard(props: AnalysisWizardProps) {
           {step < stepLabels.length ? (
             <Button onClick={() => moveToStep(step + 1)}>Weiter <ArrowRight size={18} aria-hidden="true" /></Button>
           ) : (
-            <Button onClick={onRun} disabled={loading} size="lg">{loading ? "Analyse wird berechnet …" : "Kostenlose Analyse starten"}</Button>
+            <Button onClick={runValidatedAnalysis} disabled={loading} size="lg">{loading ? "Analyse wird berechnet …" : "Kostenlose Analyse starten"}</Button>
           )}
         </div>
         </div>

@@ -3,7 +3,13 @@ import { AuthForm } from "@/components/auth/auth-form";
 
 export const metadata = { title: "Anmelden" };
 
-export default function LoginPage() {
+type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
+
+export default async function LoginPage({ searchParams }: Props) {
+  const params = searchParams ? await searchParams : {};
+  const raw = typeof params.next === "string" ? params.next : undefined;
+  const nextPath = raw?.startsWith("/") && !raw.startsWith("//") ? raw : "/dashboard";
+
   return (
     <main className="mx-auto grid min-h-[calc(100svh-72px)] max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1fr_460px] lg:px-8 lg:py-16">
       <section className="max-w-xl">
@@ -14,7 +20,7 @@ export default function LoginPage() {
           {["Analysen geräteübergreifend speichern", "Pakete und Tokenbudget dem Konto zuordnen", "Premium-Berichte später erneut öffnen"].map((item) => <li key={item} className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 shrink-0 text-teal" size={18} aria-hidden="true" />{item}</li>)}
         </ul>
       </section>
-      <AuthForm />
+      <AuthForm nextPath={nextPath} />
     </main>
   );
 }

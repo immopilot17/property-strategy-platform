@@ -2,6 +2,7 @@
 
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Bot, MessageCircle, Send, Sparkles, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { readLocalAnalyses } from "@/lib/storage/analyses";
 
 type Message = { role: "user" | "assistant"; content: string };
@@ -13,12 +14,14 @@ const suggestions = [
 ];
 
 export function Chatbot() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
+  const isAnalysisPage = pathname.startsWith("/analyse");
 
   useEffect(() => {
     if (!open) return;
@@ -33,6 +36,10 @@ export function Chatbot() {
   useEffect(() => {
     messageListRef.current?.scrollTo({ top: messageListRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   async function ask(content: string) {
     const question = content.trim();
@@ -66,9 +73,9 @@ export function Chatbot() {
   }
 
   return (
-    <div className="fixed inset-x-3 bottom-3 z-[60] pointer-events-none sm:inset-x-auto sm:bottom-5 sm:right-5 print:hidden">
+    <div className={`fixed inset-x-3 z-[60] pointer-events-none print:hidden sm:inset-x-auto sm:right-5 ${isAnalysisPage ? "bottom-24" : "bottom-3 sm:bottom-5"}`}>
       {open ? (
-        <section role="dialog" aria-modal="true" aria-labelledby="assistant-title" className="pointer-events-auto mb-3 flex h-[min(620px,calc(100svh-6rem))] w-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:w-[400px]">
+        <section role="dialog" aria-modal="true" aria-labelledby="assistant-title" className={`pointer-events-auto mb-3 flex w-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:w-[400px] ${isAnalysisPage ? "h-[min(540px,calc(100svh-10rem))]" : "h-[min(620px,calc(100svh-6rem))]"}`}>
           <header className="flex items-center justify-between gap-4 bg-ink px-5 py-4 text-white">
             <div className="flex min-w-0 items-center gap-3">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-teal text-white"><Bot size={21} aria-hidden="true" /></span>

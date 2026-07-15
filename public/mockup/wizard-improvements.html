@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wizard Improvements – Visual Mockup</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        teal: '#0D9488',
+        ink: '#0F172A',
+        mint: '#CCFBF1',
+        cloud: '#F8FAFC',
+      }
+    }
+  }
+}
+</script>
+<style>
+  * { box-sizing: border-box; }
+  body { background: #0f172a; color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .tab-active { border-color: #0D9488; color: #0D9488; background: rgba(13,148,136,0.08); }
+  .tab-inactive { border-color: transparent; color: #94a3b8; }
+  .section-label { letter-spacing: 0.18em; font-size: 11px; font-weight: 900; text-transform: uppercase; color: #0D9488; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 20px; }
+  .field-label { font-size: 13px; font-weight: 700; color: #f1f5f9; }
+  .field-input { background: #0f172a; border: 1px solid #475569; border-radius: 12px; padding: 10px 14px; width: 100%; color: #f1f5f9; font-size: 14px; outline: none; }
+  .field-input:focus { border-color: #0D9488; box-shadow: 0 0 0 3px rgba(13,148,136,0.15); }
+  .btn-primary { background: #0D9488; color: white; border-radius: 12px; padding: 10px 20px; font-weight: 700; font-size: 14px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background 0.15s; }
+  .btn-primary:hover { background: #0f766e; }
+  .btn-ghost { background: transparent; color: #94a3b8; border: 1px solid #334155; border-radius: 12px; padding: 10px 20px; font-weight: 700; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(13,148,136,0.12); color: #2dd4bf; border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 700; }
+  .progress-bar { height: 6px; background: #1e293b; border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #0D9488, #14b8a6); border-radius: 99px; transition: width 0.4s ease; }
+  .goal-card { border: 2px solid #334155; border-radius: 18px; padding: 20px; cursor: pointer; transition: all 0.15s; background: #1e293b; }
+  .goal-card:hover { border-color: #0D9488; }
+  .goal-card.active { border-color: #0D9488; background: rgba(13,148,136,0.08); }
+  .goal-card .icon-wrap { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: #334155; color: #94a3b8; transition: all 0.15s; }
+  .goal-card.active .icon-wrap { background: #0D9488; color: white; }
+  .step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; border: 2px solid; flex-shrink: 0; }
+  .step-dot.done { background: #0D9488; border-color: #0D9488; color: white; }
+  .step-dot.active { background: #0f172a; border-color: #0D9488; color: #0D9488; }
+  .step-dot.pending { background: #1e293b; border-color: #334155; color: #475569; }
+  .live-chip { background: rgba(13,148,136,0.1); border: 1px solid rgba(13,148,136,0.25); border-radius: 10px; padding: 8px 12px; }
+  .meter-bar { height: 8px; border-radius: 99px; overflow: hidden; background: #334155; }
+  .meter-fill { height: 100%; border-radius: 99px; }
+  .signal-green { background: #10b981; }
+  .signal-yellow { background: #f59e0b; }
+  .signal-red { background: #ef4444; }
+  .tooltip-hint { font-size: 11px; color: #64748b; line-height: 1.5; margin-top: 4px; }
+  .check-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: 12px; }
+  .check-item.ok { background: rgba(16,185,129,0.07); }
+  .check-item.warn { background: rgba(245,158,11,0.07); }
+  .check-item.err { background: rgba(239,68,68,0.07); }
+  .timeline-bar { height: 10px; border-radius: 99px; overflow: hidden; background: #334155; }
+  .annotation { background: rgba(13,148,136,0.08); border: 1px dashed rgba(13,148,136,0.4); border-radius: 12px; padding: 10px 14px; font-size: 12px; color: #2dd4bf; line-height: 1.6; }
+  .improvement-tag { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); border-radius: 8px; padding: 2px 8px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
+  .new-tag { background: rgba(13,148,136,0.12); color: #2dd4bf; border: 1px solid rgba(13,148,136,0.25); border-radius: 8px; padding: 2px 8px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-divider { border: none; border-top: 1px solid #1e293b; margin: 48px 0; }
+</style>
+</head>
+<body>
+
+<!-- ========== TOP NAV ========== -->
+<nav style="background:#0f172a; border-bottom: 1px solid #1e293b; padding: 14px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50;">
+  <div style="display:flex; align-items:center; gap:10px;">
+    <div style="width:32px;height:32px;background:#0D9488;border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;font-weight:900;">P</div>
+    <span style="font-weight:800;font-size:16px;">Property Strategy</span>
+  </div>
+  <span style="font-size:12px;color:#64748b;background:#1e293b;padding:4px 12px;border-radius:20px;border:1px solid #334155;">🎨 Visual Improvements Mockup</span>
+</nav>
+
+<!-- ========== HERO ========== -->
+<div style="padding: 40px 24px 0; max-width: 900px; margin: 0 auto;">
+  <p class="section-label">Wizard UI/UX Verbesserungen</p>
+  <h1 style="font-size: 32px; font-weight: 900; margin: 8px 0 12px; line-height: 1.2;">Visuelle Verbesserungsvorschläge<br/>für den Analyse-Wizard</h1>
+  <p style="color:#94a3b8; font-size:15px; line-height:1.7; max-width:680px;">Jeder Abschnitt zeigt den <strong style="color:#f1f5f9">Ist-Zustand</strong> und den <strong style="color:#0D9488">Verbesserungsvorschlag</strong> direkt nebeneinander. Klicke auf die Tabs um zwischen Varianten zu wechseln.</p>
+</div>
+
+<!-- ===== SECTION 1: SCHRITT-FORTSCHRITT ===== -->
+<section style="padding: 40px 24px; max-width: 900px; margin: 0 auto;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <span style="background:#0D9488;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;">1</span>
+    <h2 style="font-size:20px;font-weight:900;margin:0;">Schritt-Fortschrittsanzeige</h2>
+    <span class="improvement-tag">Verbesserung</span>
+  </div>
+
+  <!-- TABS -->
+  <div style="display:flex;gap:8px;margin-bottom:20px;" id="tabs-progress">
+    <button onclick="showTab('progress','current')" style="padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;border:2px solid;cursor:pointer;" class="tab-inactive" id="tab-progress-current">Aktuell</button>
+    <button onclick="showTab('progress','improved')" style="padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;border:2px solid;cursor:pointer;" class="tab-active" id="tab-progress-improved">✨ Verbessert</button>
+  </div>
+
+  <!-- CURRENT -->
+  <div id="panel-progress-current" style="display:none;">
+    <div class="card" style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px;">
+        <p style="font-weight:700;">Schritt 2 von 5</p>
+        <p style="font-size:13px;color:#94a3b8;">Immobilie</p>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:40%;"></div></div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:16px;">
+        <button style="border-radius:8px;padding:8px 4px;font-size:11px;font-weight:700;background:transparent;border:none;cursor:pointer;color:#64748b;">1. Ziel</button>
+        <button style="border-radius:8px;padding:8px 4px;font-size:11px;font-weight:700;background:rgba(13,148,136,0.1);border:none;cursor:pointer;color:#0D9488;">2. Immobilie</button>
+        <button style="border-radius:8px;padding:8px 4px;font-size:11px;font-weight:700;background:transparent;border:none;cursor:pointer;color:#64748b;">3. Haushalt</button>
+        <button style="border-radius:8px;padding:8px 4px;font-size:11px;font-weight:700;background:transparent;border:none;cursor:pointer;color:#64748b;">4. Finanzierung</button>
+        <button style="border-radius:8px;padding:8px 4px;font-size:11px;font-weight:700;background:transparent;border:none;cursor:pointer;color:#64748b;">5. Prüfen</button>
+      </div>
+    </div>
+    <p class="annotation" style="margin-top:12px;">⚠️ Probleme: Nur Text, kein visueller "Abgehakt"-Status. Keine Schätzung wie lange jeder Schritt dauert. Fertige Schritte sind nicht als erledigt markiert.</p>
+  </div>
+
+  <!-- IMPROVED -->
+  <div id="panel-progress-improved" style="display:block;">
+    <div class="card" style="padding:20px;">
+      <!-- Top row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:4px;">
+        <div>
+          <p style="font-weight:800;font-size:15px;">Schritt 2 von 5 — Immobilie erfassen</p>
+          <p style="font-size:12px;color:#64748b;margin-top:2px;">⏱ ~2 Minuten · Automatisch gespeichert</p>
+        </div>
+        <span style="font-size:12px;color:#10b981;font-weight:700;background:rgba(16,185,129,0.1);padding:4px 10px;border-radius:20px;">40 %</span>
+      </div>
+      <!-- Progress bar with segment markers -->
+      <div style="margin:16px 0;position:relative;">
+        <div class="progress-bar" style="height:8px;">
+          <div class="progress-fill" style="width:40%;"></div>
+        </div>
+        <!-- Markers -->
+        <div style="display:flex;justify-content:space-between;margin-top:8px;">
+          <span style="font-size:10px;color:#64748b;">Start</span>
+          <span style="font-size:10px;color:#0D9488;">◆ Hier</span>
+          <span style="font-size:10px;color:#64748b;">Analyse</span>
+        </div>
+      </div>
+      <!-- Step dots with icons -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">
+        <!-- Step 1 done -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <div class="step-dot done">✓</div>
+          <span style="font-size:10px;font-weight:700;color:#10b981;text-align:center;">Ziel</span>
+        </div>
+        <!-- Step 2 active -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <div class="step-dot active" style="position:relative;">2
+            <span style="position:absolute;top:-3px;right:-3px;width:8px;height:8px;background:#0D9488;border-radius:50%;animation:pulse 1.5s infinite;border:2px solid #0f172a;"></span>
+          </div>
+          <span style="font-size:10px;font-weight:800;color:#0D9488;text-align:center;">Immobilie</span>
+        </div>
+        <!-- Steps 3-5 pending -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <div class="step-dot pending">3</div>
+          <span style="font-size:10px;color:#475569;text-align:center;">Haushalt</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <div class="step-dot pending">4</div>
+          <span style="font-size:10px;color:#475569;text-align:center;">Finanzierung</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <div class="step-dot pending">5</div>
+          <span style="font-size:10px;color:#475569;text-align:center;">Prüfen</span>
+        </div>
+      </div>
+    </div>
+    <p class="annotation" style="margin-top:12px;">✅ Verbesserungen: Checkmark für erledigte Schritte · Puls-Indikator für aktuellen Schritt · Zeitschätzung · % Anzeige · Klare visuell gestaffelte Hierarchie</p>
+  </div>
+</section>
+
+<hr class="section-divider" />
+
+<!-- ===== SECTION 2: SCHRITT 1 ZIEL ===== -->
+<section style="padding: 0 24px 40px; max-width: 900px; margin: 0 auto;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <span style="background:#0D9488;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;">2</span>
+    <h2 style="font-size:20px;font-weight:900;margin:0;">Schritt 1 — Zielauswahl</h2>
+    <span class="improvement-tag">Verbesserung</span>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:20px;">
+    <button onclick="showTab('goal','current')" style="padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;border:2px solid;cursor:pointer;" class="tab-inactive" id="tab-goal-current">Aktuell</button>
+    <button onclick="showTab('goal','improved')" style="padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;border:2px solid;cursor:pointer;" class="tab-active" id="tab-goal-improved">✨ Verbessert</button>
+  </div>
+
+  <!-- CURRENT -->
+  <div id="panel-goal-current" style="display:none;">
+    <div class="card" style="padding:20px;">
+      <p class="section-label">1 · Dein Ziel</p>
+      <h2 style="font-size:22px;font-weight:900;margin:8px 0 12px;">Was möchtest du mit der Immobilie erreichen?</h2>
+      <p style="color:#94a3b8;font-size:14px;margin-bottom:20px;">Diese Auswahl bestimmt, welche Kennzahlen, Förderungen und Steuerhinweise später wichtig sind.</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+        <div class="goal-card active">
+          <div class="icon-wrap"><span>🏠</span></div>
+          <p style="font-weight:700;margin:16px 0 6px;">Selbst einziehen</p>
+          <p style="font-size:13px;color:#94a3b8;line-height:1.5;">Bezahlbarkeit, Reserve und Förderungen stehen im Mittelpunkt.</p>
+        </div>
+        <div class="goal-card">
+          <div class="icon-wrap"><span>🏦</span></div>
+          <p style="font-weight:700;margin:16px 0 6px;">Vermieten</p>
+          <p style="font-size:13px;color:#94a3b8;line-height:1.5;">Rendite, Cashflow, Steuern und Risiken werden vertieft.</p>
+        </div>
+        <div class="goal-card">
+          <div class="icon-wrap"><span>🔍</span></div>
+          <p style="font-weight:700;margin:16px 0 6px;">Teilweise vermieten</p>
+          <p style="font-size:13px;color:#94a3b8;line-height:1.5;">Eigennutzung und Kapitalanlage werden gemeinsam betrachtet.</p>
+        </div>
+      </div>
+    </div>
+    <p class="annotation" style="margin-top:12px;">⚠️ Problem: Keine konkreten Beispiele was die Wahl bedeutet. Keine "Was erwartet mich?" Vorschau. Alle drei Optionen sehen gleich aus – keine visuelle Differenzierung.</p>
+  </div>
+
+  <!-- IMPROVED -->
+  <div id="panel-goal-improved" style="display:block;">
+    <div class="card" style="padding:24px;">
+      <p class="section-label">1 · Dein Ziel</p>
+      <h2 style="font-size:22px;font-weight:900;margin:8px 0 4px;">Was ist dein Ziel für diese Immobilie?</h2>
+      <p style="color:#64748b;font-size:13px;margin-bottom:20px;">Die Analyse passt sich deiner Antwort an. Du kannst das Ziel später noch ändern.</p>
+      <div style="display:grid;gap:12px;">
+        <!-- Card 1 - Active with extra detail -->
+        <div class="goal-card active" style="display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;">
+          <div class="icon-wrap" style="width:52px;height:52px;border-radius:14px;font-size:22px;">🏠</div>
+          <div>
+            <p style="font-weight:800;font-size:15px;margin:0 0 4px;">Selbst einziehen</p>
+            <p style="font-size:12px;color:#94a3b8;line-height:1.5;margin:0;">Fokus auf Monatsrate, Eigenkapital, Reserve und Wohnförderung (KfW, Wohn-Riester).</p>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+              <span style="background:rgba(13,148,136,0.1);color:#2dd4bf;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">Bezahlbarkeit</span>
+              <span style="background:rgba(13,148,136,0.1);color:#2dd4bf;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">Förderungen</span>
+              <span style="background:rgba(13,148,136,0.1);color:#2dd4bf;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">Reserve</span>
+            </div>
+          </div>
+          <div style="color:#0D9488;font-size:20px;">✓</div>
+        </div>
+        <!-- Card 2 -->
+        <div class="goal-card" style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;">
+          <div class="icon-wrap" style="width:52px;height:52px;border-radius:14px;font-size:22px;">📈</div>
+          <div>
+            <p style="font-weight:800;font-size:15px;margin:0 0 4px;">Als Kapitalanlage vermieten</p>
+            <p style="font-size:12px;color:#94a3b8;line-height:1.5;margin:0;">Fokus auf Nettomietrendite, Cashflow, Steueroptimierung und Risikobewertung.</p>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+              <span style="background:#1e293b;color:#64748b;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">Rendite</span>
+              <span style="background:#1e293b;color:#64748b;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">Cashflow</span>
+              <span style="background:#1e293b;color:#64748b;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">Steuer AfA</span>
+            </div>
+          </div>
+        </div>
+        <!-- Card 3 -->
+        <div class="goal-card" style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;">
+          <div class="icon-wrap" style="width:52px;height:52px;border-radius:14px;font-size:22px;">🏘</div>
+          <div>
+            <p style="font-weight:800;font-size:15px;margin:0 0 4px;">Teilweise vermieten</p>
+            <p style="font-size:12px;color:#94a3b8;line-height:1.5;margin:0;">Kombination aus Wohnen und Vermieten – beides fließt in die Analyse ein.</p>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+              <span style="background:#1e293b;color:#64748b;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">Gemischt</span>
+              <span style="background:#1e293b;color:#64748b;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">Flexibel</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- What changes preview -->
+      <div style="margin-top:20px;padding:16px;background:rgba(13,148,136,0.06);border:1px solid rgba(13,148,136,0.15);border-radius:14px;">
+        <p style="font-size:12px;font-weight:800;color:#0D9488;margin:0 0 10px;">🎯 Basierend auf deiner Auswahl zeige ich dir:</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;"><span style="color:#10b981;">✓</span><span style="font-size:12px;color:#cbd5e1;">KfW & Wohn-Riester Förderungen</span></div>
+          <div style="display:flex;align-items:center;gap:8px;"><span style="color:#10b981;">✓</span><span style="font-size:12px;color:#cbd5e1;">Bezahlbarkeitsgrenze</span></div>
+          <div style="display:flex;align-items:center;gap:8px;"><span style="color:#10b981;">✓</span><span style="font-size:12px;color:#cbd5e1;">Notfallreserve-Empfehlung</span></div>
+          <div style="display:flex;align-items:center;gap:8px;"><span style="color:#475569;">—</span><span style="font-size:12px;color:#475569;">Mietrendite (nicht relevant)</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="annotation" style="margin-top:12px;">✅ Verbesserungen: Tags zeigen welche Kennzahlen relevant sind · Horizontale List-Cards statt Grid (besser lesbar) · Preview-Box zeigt was die Wahl konkret ändert · Visuell differenzierte Zustände</p>
+  </div>
+</section>
+
+<hr class="section-divider" />
+
+<!-- ===== SECTION 3: SCHRITT 2 IMMOBILIE ===== -->
+<section style="padding: 0 24px 40px; max-width: 900px; margin: 0 auto;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <span style="background:#0D9488;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;">3</span>
+    <h2 style="font-size:20px;font-weight:900;margin:0;">Schritt 2 — Immobilie · Preisanzeige</h2>
+    <span class="new-tag">Neu</span>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:20px;">
+    <button onclick="showTab('price','current')" style="padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;border:2px solid;cursor:pointer;" class="tab-inactive" id="tab-price-current">Aktuell</button>
+    <button onclick="showTab('price','improved')" style="padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;border:2px solid;cursor:pointer;" class="tab-active" id="tab-price-improved">✨ Verbessert</button>
+  </div>
+
+  <!-- CURRENT -->
+  <div id="panel-price-current" style="display:none;">
+    <div class="card" style="padding:20px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <label class="block">
+          <span class="field-label">Kaufpreis</span>
+          <div style="display:flex;margin-top:8px;border-radius:12px;border:1px solid #475569;overflow:hidden;">
+            <input class="field-input" style="border:none;border-radius:0;" value="350000" readonly />
+            <span style="padding:10px 14px;background:#1e293b;border-left:1px solid #475569;color:#94a3b8;font-size:13px;">€</span>
+          </div>
+        </label>
+        <label class="block">
+          <span class="field-label">Wohnfläche</span>
+          <div style="display:flex;margin-top:8px;border-radius:12px;border:1px solid #475569;overflow:hidden;">
+            <input class="field-input" style="border:none;border-radius:0;" value="85" readonly />
+            <span style="padding:10px 14px;background:#1e293b;border-left:1px solid #475569;color:#94a3b8;font-size:13px;">m²</span>
+          </div>
+        </label>
+      </div>
+    </div>
+    <p class="annotation" style="margin-top:12px;">⚠️ Problem: Kein Preis-pro-m² wird angezeigt. Keine Einordnung ob der Preis marktüblich ist. Felder stehen isoliert – kein Zusammenhang erkennbar.</p>
+  </div>
+
+  <!-- IMPROVED -->
+  <div id="panel-price-improved" style="display:block;">
+    <div class="card" style="padding:20px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <label>
+          <span class="field-label">Kaufpreis</span>
+          <div style="display:flex;margin-top:8px;border-radius:12px;border:1px solid #0D9488;overflow:hidden;box-shadow:0 0 0 3px rgba(13,148,136,0.12);">
+            <input class="field-input" style="border:none;border-radius:0;" value="350.000" readonly />
+            <span style="padding:10px 14px;background:#1e293b;border-left:1px solid #334155;color:#94a3b8;font-size:13px;">€</span>
+          </div>
+          <p class="tooltip-hint">Angebotspreis lt. Inserat</p>
+        </label>
+        <label>
+          <span class="field-label">Wohnfläche</span>
+          <div style="display:flex;margin-top:8px;border-radius:12px;border:1px solid #475569;overflow:hidden;">
+            <input class="field-input" style="border:none;border-radius:0;" value="85" readonly />
+            <span style="padding:10px 14px;background:#1e293b;border-left:1px solid #334155;color:#94a3b8;font-size:13px;">m²</span>
+          </div>
+          <p class="tooltip-hint">Nur Wohnfläche lt. Grundriss</p>
+        </label>
+      </div>
+      <!-- Live price metrics -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px;background:#0f172a;border-radius:14px;border:1px solid #1e293b;">
+        <div>
+          <p style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;">Preis / m²</p>
+          <p style="font-size:20px;font-weight:900;color:#f1f5f9;margin:4px 0 2px;">4.118 €</p>
+          <p style="font-size:11px;color:#f59e0b;font-weight:700;">↑ +12 % vs. Markt</p>
+        </div>
+        <div>
+          <p style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;">Gesamtinvestition</p>
+          <p style="font-size:20px;font-weight:900;color:#f1f5f9;margin:4px 0 2px;">385.350 €</p>
+          <p style="font-size:11px;color:#94a3b8;">inkl. Nebenkosten ~10 %</p>
+        </div>
+        <div>
+          <p style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;">Finanzierungslücke</p>
+          <p style="font-size:20px;font-weight:900;color:#10b981;margin:4px 0 2px;">–50.000 €</p>
+          <p style="font-size:11px;color:#10b981;font-weight:700;">✓ Eigenkapital reicht</p>
+        </div>
+      </div>
+      <!-- Market comparison bar -->
+      <div style="margin-top:14px;padding:14px;background:#0f172a;border-radius:14px;border:1px solid #1e293b;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <p style="font-size:12px;font-weight:700;color:#94a3b8;">Einordnung Kaufpreis</p>
+          <span style="font-size:11px;color:#f59e0b;font-weight:700;background:rgba(245,158,11,0.1);padding:2px 8px;border-radius:6px;">Über Markt</span>
+        </div>
+        <div class="meter-bar">
+          <div class="meter-fill" style="width:72%;background:linear-gradient(90deg,#10b981 0%,#f59e0b 60%,#ef4444 100%);position:relative;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;">
+          <span style="font-size:10px;color:#64748b;">Günstig &lt;3.500 €/m²</span>
+          <span style="font-size:10px;color:#f59e0b;font-weight:700;">▲ Du: 4.118 €/m²</span>
+          <span style="font-size:10px;color:#64748b;">&gt;5.000 € Teuer</span>
+        </div>
+      </div>
+    </div>
+    <p class="annotation" style="margin-top:12px;">✅ Neu: Preis/m² wird live berechnet · Gesamtinvestition inkl. Nebenkosten sofort sichtbar · Markteinordnung mit Balken · Ob Eigenkapital reicht wird direkt angezeigt</p>
+  </div>
+</section>
+
+<hr class="section-divider" />
+
+<!-- ===== SECTION 4: SCHRITT 3 HAUSHALT – TRAGBARKEIT ===== -->
+<section style="padding: 0 24px 40px; max-width: 900px; margin: 0 auto;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <span style="background:#0D9488;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;">4</span>
+    <h2 style="font-size:20px;font-weight:900;margin:0;">Schritt 3 — Haushalt · Tragbarkeits-Anzeige</h2>
+    <span class="new-tag">Neu</span>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:20px;">
+    <button onclick="showTab('afford','current')" style="padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;border:2px solid;cursor:pointer;" class="tab-inactive" id="tab-afford-current">Aktuell</button>
+    <button onclick="showTab('afford','improved')" style="padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;border:2px solid;cursor:pointer;" class="tab-active" id="tab-afford-improved">✨ Verbessert</button>
+  </div>
+
+  <!-- CURRENT -->
+  <div id="panel-afford-current" style="display:none;">
+    <div class="card" style="padding:20px;">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:16px;background:#0f172a;border-radius:14px;">
+        <div><p style="font-size:11px;color:#64748b;font-weight:600;">Haushaltseinkommen</p><p style="font-weight:700;">3.500 € / Monat</p></div>
+        <div><p style="font-size:11px;color:#64748b;font-weight:600;">Bestehende Kreditraten</p><p style="font-weight:700;">0 € / Monat</p></div>
+        <div><p style="font-size:11px;color:#64748b;font-weight:600;">Eigenkapital gesamt</p><p style="font-weight:700;">80.000 €</p></div>
+      </div>
+    </div>
+    <p class="annotation" style="margin-top:12px;">⚠️ Problem: Nur trockene Zahlen, kein visuelles Feedback ob das ausreicht. Nutzer wissen nicht ob ihr Einkommen für diesen Kauf geeignet ist. Keine Warnung wenn die Rate zu hoch ist.</p>
+  </div>
+
+  <!-- IMPROVED -->
+  <div id="panel-afford-improved" style="display:block;">
+    <div class="card" style="padding:20px;">
+      <!-- Affordability meter -->
+      <div style="padding:18px;background:#0f172a;border-radius:16px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <p style="font-weight:800;font-size:15px;">Tragbarkeits-Analyse</p>
+          <span style="background:rgba(16,185,129,0.1);color:#10b981;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">✓ Tragbar</span>
+        </div>
+        <!-- Income breakdown -->
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:#94a3b8;margin-bottom:6px;">
+            <span>Monatliches Netto</span>
+            <span style="font-weight:700;color:#f1f5f9;">3.500 €</span>
+          </div>
+          <div class="meter-bar">
+            <div class="meter-fill signal-green" style="width:100%;"></div>
+          </div>
+        </div>
+        <!-- Expense breakdown stacked -->
+        <div style="margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:#94a3b8;margin-bottom:6px;">
+            <span>Lebenshaltung</span>
+            <span style="font-weight:700;color:#f1f5f9;">1.800 € (51 %)</span>
+          </div>
+          <div class="meter-bar"><div class="meter-fill signal-yellow" style="width:51%;"></div></div>
+        </div>
+        <div style="margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:#94a3b8;margin-bottom:6px;">
+            <span>Neue Kreditrate</span>
+            <span style="font-weight:700;color:#f1f5f9;">1.497 € (43 %)</span>
+          </div>
+          <div class="meter-bar"><div class="meter-fill" style="width:43%;background:#0D9488;"></div></div>
+        </div>
+        <!-- Traffic light summary -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;">
+          <div class="check-item ok">
+            <span style="color:#10b981;font-size:16px;">✓</span>
+            <div><p style="font-size:12px;font-weight:700;color:#10b981;margin:0;">Rate / Einkommen</p><p style="font-size:11px;color:#64748b;margin:2px 0 0;">43 % &lt; 40 %? Knapp</p></div>
+          </div>
+          <div class="check-item ok">
+            <span style="color:#10b981;font-size:16px;">✓</span>
+            <div><p style="font-size:12px;font-weight:700;color:#10b981;margin:0;">Eigenkapital</p><p style="font-size:11px;color:#64748b;margin:2px 0 0;">22 % vom Kaufpreis</p></div>
+          </div>
+          <div class="check-item warn">
+            <span style="color:#f59e0b;font-size:16px;">!</span>
+            <div><p style="font-size:12px;font-weight:700;color:#f59e0b;margin:0;">Reserve nach Kauf</p><p style="font-size:11px;color:#64748b;margin:2px 0 0;">203 € / Monat verbleiben</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="annotation" style="margin-top:12px;">✅ Neu: Visueller Tragbarkeits-Meter mit Balkendiagramm · Ampel-System (grün/gelb/rot) · Echtzeit-Feedback während Eingabe · Reserve-Warnung wenn kritisch</p>
+  </div>
+</section>
+
+<hr class="section-divider" />
+
+<!-- ===== SECTION 5: SCHRITT 4 FINANZIERUNG ===== -->
+<section style="padding: 0 24px 40px; max-width: 900px; margin: 0 auto;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <span style="background:#0D9488;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;">5</span>
+    <h2 style="font-size:20px;font-weight:900;margin:0;">Schritt 4 — Finanzierung · Kredit-Visualisierung</h2>
+    <span class="new-tag">Neu</span>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:20px;">
+    <button onclick="showTab('loan','current')" style="padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;border:2px solid;cursor:pointer;" class="tab-inactive" id="tab-loan-current">Aktuell</button>
+    <button onclick="showTab('loan','improved')" style="padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;border:2px solid;cursor:pointer;" class="tab-active" id="tab-loan-improved">✨ Verbessert</button>
+  </div>
+
+  <!-- CURRENT -->
+  <div id="panel-loan-current" style="display:none;">
+    <div class="card" style="padding:20px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <span class="field-label">Eigenkapital für diesen Kauf</span>
+          <div style="display:flex;margin-top:8px;border-radius:12px;border:1px solid #475569;overflow:hidden;">
+            <input class="field-input" style="border:none;border-radius:0;" value="80000" readonly />
+            <span style="padding:10px 14px;background:#1e293b;border-left:1px solid #334155;color:#94a3b8;font-size:13px;">€</span>
+          </div>
+        </div>
+        <div>
+          <span class="field-label">Sollzins pro Jahr</span>
+          <div style="display:flex;margin-top:8px;border-radius:12px;border:1px solid #475569;overflow:hidden;">
+            <input class="field-input" style="border:none;border-radius:0;" value="3.50" readonly />
+            <span style="padding:10px 14px;background:#1e293b;border-left:1px solid #334155;color:#94a3b8;font-size:13px;">%</span>
+          </div>
+        </div>
+        <div>
+          <span class="field-label">Anfängliche Tilgung</span>
+          <div style="display:flex;margin-top:8px;border-radius:12px;border:1px solid #475569;overflow:hidden;">
+            <input class="field-input" style="border:none;border-radius:0;" value="2.00" readonly />
+            <span style="padding:10px 14px;background:#1e293b;border-left:1px solid #334155;color:#94a3b8;font-size:13px;">%</span>
+          </div>
+        </div>
+        <div>
+          <span class="field-label">Zinsbindung</span>
+          <div style="display:flex;margin-top:8px;border-radius:12px;border:1px solid #475569;overflow:hidden;">
+            <input class="field-input" style="border:none;border-radius:0;" value="10" readonly />
+            <span style="padding:10px 14px;background:#1e293b;border-left:1px solid #334155;color:#94a3b8;font-size:13px;">Jahre</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="annotation" style="margin-top:12px;">⚠️ Problem: Keine Visualisierung des Tilgungsverlaufs. Nutzer sehen nicht wie sich die Restschuld entwickelt. Keine Warnung bei zu niedriger Tilgung (Laufzeit über 30 Jahre).</p>
+  </div>
+
+  <!-- IMPROVED -->
+  <div id="panel-loan-improved" style="display:block;">
+    <div class="card" style="padding:20px;">
+      <!-- Sliders for key params -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span class="field-label">Sollzins / Jahr</span>
+            <span style="font-size:13px;font-weight:800;color:#0D9488;">3,50 %</span>
+          </div>
+          <input type="range" min="1" max="6" step="0.1" value="3.5" style="width:100%;accent-color:#0D9488;" />
+          <div style="display:flex;justify-content:space-between;margin-top:4px;">
+            <span style="font-size:10px;color:#64748b;">1 %</span>
+            <span style="font-size:10px;color:#64748b;">6 %</span>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span class="field-label">Anfangstilgung / Jahr</span>
+            <span style="font-size:13px;font-weight:800;color:#0D9488;">2,00 %</span>
+          </div>
+          <input type="range" min="1" max="5" step="0.5" value="2" style="width:100%;accent-color:#0D9488;" />
+          <div style="display:flex;justify-content:space-between;margin-top:4px;">
+            <span style="font-size:10px;color:#64748b;">1 % (lang)</span>
+            <span style="font-size:10px;color:#64748b;">5 % (kurz)</span>
+          </div>
+        </div>
+      </div>
+      <!-- Live loan summary -->
+      <div style="background:#0f172a;border-radius:14px;padding:16px;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;">
+          <div>
+            <p style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;margin:0 0 4px;">Kreditbetrag</p>
+            <p style="font-size:18px;font-weight:900;color:#f1f5f9;">305.350 €</p>
+          </div>
+          <div>
+            <p style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;margin:0 0 4px;">Monatsrate</p>
+            <p style="font-size:18px;font-weight:900;color:#0D9488;">1.497 €</p>
+          </div>
+          <div>
+            <p style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;margin:0 0 4px;">Restschuld in 10 J.</p>
+            <p style="font-size:18px;font-weight:900;color:#f59e0b;">248.000 €</p>
+          </div>
+          <div>
+            <p style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;margin:0 0 4px;">Gesamtlaufzeit</p>
+            <p style="font-size:18px;font-weight:900;color:#f1f5f9;">~29 J.</p>
+          </div>
+        </div>
+        <!-- Loan repayment timeline visualization -->
+        <p style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;margin:0 0 8px;">Tilgungsverlauf (vereinfacht)</p>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <!-- Each bar represents 5 years -->
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:10px;color:#64748b;width:32px;">Start</span>
+            <div class="timeline-bar" style="flex:1;">
+              <div style="height:100%;width:100%;background:linear-gradient(90deg,#0D9488 0%,#0D9488 26%,#334155 26%);"></div>
+            </div>
+            <span style="font-size:10px;color:#64748b;width:68px;">305.350 €</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:10px;color:#64748b;width:32px;">10 J.</span>
+            <div class="timeline-bar" style="flex:1;">
+              <div style="height:100%;width:81%;background:#1e293b;border-right:2px solid #f59e0b;"></div>
+            </div>
+            <span style="font-size:10px;color:#f59e0b;width:68px;">248.000 € ⚠</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:10px;color:#64748b;width:32px;">20 J.</span>
+            <div class="timeline-bar" style="flex:1;">
+              <div style="height:100%;width:48%;background:#1e293b;"></div>
+            </div>
+            <span style="font-size:10px;color:#64748b;width:68px;">147.000 €</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:10px;color:#64748b;width:32px;">29 J.</span>
+            <div class="timeline-bar" style="flex:1;">
+              <div style="height:100%;width:1%;background:#10b981;"></div>
+            </div>
+            <span style="font-size:10px;color:#10b981;width:68px;">0 € ✓ frei</span>
+          </div>
+        </div>
+        <p style="font-size:11px;color:#f59e0b;margin:10px 0 0;">⚠ Nach der Zinsbindung (10 J.) noch 248.000 € offen – Anschlussfinanzierung planen!</p>
+      </div>
+    </div>
+    <p class="annotation" style="margin-top:12px;">✅ Neu: Schieberegler für Zins & Tilgung · Live-Update der Monatsrate · Tilgungsverlauf als Balkendiagramm · Restschuld nach Zinsbindung wird explizit hervorgehoben · Warnung bei hoher Restschuld</p>
+  </div>
+</section>
+
+<hr class="section-divider" />
+
+<!-- ===== SECTION 6: SCHRITT 5 PRÜFEN ===== -->
+<section style="padding: 0 24px 40px; max-width: 900px; margin: 0 auto;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <span style="background:#0D9488;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;">6</span>
+    <h2 style="font-size:20px;font-weight:900;margin:0;">Schritt 5 — Prüfen · Zusammenfassung</h2>
+    <span class="improvement-tag">Verbesserung</span>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:20px;">
+    <button onclick="showTab('review','current')" style="padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;border:2px solid;cursor:pointer;" class="tab-inactive" id="tab-review-current">Aktuell</button>
+    <button onclick="showTab('review','improved')" style="padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;border:2px solid;cursor:pointer;" class="tab-active" id="tab-review-improved">✨ Verbessert</button>
+  </div>
+
+  <!-- CURRENT -->
+  <div id="panel-review-current" style="display:none;">
+    <div class="card" style="padding:20px;">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div style="background:#0f172a;padding:14px;border-radius:14px;">
+          <p style="font-size:11px;color:#64748b;font-weight:600;">Immobilie</p>
+          <p style="font-weight:700;font-size:15px;">350.000 €</p>
+          <p style="font-size:12px;color:#94a3b8;">München · 85 m²</p>
+        </div>
+        <div style="background:#0f172a;padding:14px;border-radius:14px;">
+          <p style="font-size:11px;color:#64748b;font-weight:600;">Finanzierung</p>
+          <p style="font-weight:700;font-size:15px;">1.497 €</p>
+          <p style="font-size:12px;color:#94a3b8;">Monatsrate</p>
+        </div>
+        <div style="background:#0f172a;padding:14px;border-radius:14px;">
+          <p style="font-size:11px;color:#64748b;font-weight:600;">Haushalt</p>
+          <p style="font-weight:700;font-size:15px;">3.500 €</p>
+          <p style="font-size:12px;color:#94a3b8;">Nettoeinkommen / Monat</p>
+        </div>
+      </div>
+    </div>
+    <p class="annotation" style="margin-top:12px;">⚠️ Problem: Keine Bewertung der Angaben (gut/kritisch). Keine schnelle Möglichkeit etwas direkt zu korrigieren. Analyse-Button hat kein visuelles Gewicht – wirkt wie normaler Link.</p>
+  </div>
+
+  <!-- IMPROVED -->
+  <div id="panel-review-improved" style="display:block;">
+    <div class="card" style="padding:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div>
+          <p class="section-label">5 · Zusammenfassung</p>
+          <h2 style="font-size:20px;font-weight:900;margin:6px 0 0;">Alles bereit für die Analyse?</h2>
+        </div>
+        <!-- Overall score -->
+        <div style="text-align:center;background:#0f172a;padding:14px 18px;border-radius:14px;border:1px solid #1e293b;">
+          <p style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;margin:0 0 4px;">Gesamtbild</p>
+          <p style="font-size:28px;font-weight:900;color:#f59e0b;margin:0;">73</p>
+          <p style="font-size:10px;color:#f59e0b;font-weight:700;margin:2px 0 0;">/ 100 · Okay</p>
+        </div>
+      </div>
+
+      <!-- Check items -->
+      <div style="display:grid;gap:8px;margin-bottom:20px;">
+        <div class="check-item ok" style="display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;">
+          <span style="font-size:18px;">✅</span>
+          <div><p style="font-weight:700;font-size:13px;margin:0;">Eigenkapital 22 %</p><p style="font-size:12px;color:#64748b;margin:2px 0 0;">80.000 € von 350.000 € – über Mindestempfehlung 20 %</p></div>
+          <span style="color:#64748b;font-size:12px;cursor:pointer;" onclick="alert('Zum Schritt 3 springen um Eigenkapital anzupassen')">✏ ändern</span>
+        </div>
+        <div class="check-item warn" style="display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;">
+          <span style="font-size:18px;">⚠️</span>
+          <div><p style="font-weight:700;font-size:13px;margin:0;color:#f59e0b;">Rate 43 % des Einkommens</p><p style="font-size:12px;color:#64748b;margin:2px 0 0;">1.497 € von 3.500 € – Banken empfehlen &lt;35 %</p></div>
+          <span style="color:#f59e0b;font-size:12px;cursor:pointer;" onclick="alert('Zum Schritt 4 springen um Tilgung/Zins anzupassen')">✏ anpassen</span>
+        </div>
+        <div class="check-item ok" style="display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;">
+          <span style="font-size:18px;">✅</span>
+          <div><p style="font-weight:700;font-size:13px;margin:0;">Tilgung 2 % – Laufzeit ~29 Jahre</p><p style="font-size:12px;color:#64748b;margin:2px 0 0;">Akzeptabel. Höhere Tilgung = früher schuldenfrei.</p></div>
+          <span style="color:#64748b;font-size:12px;cursor:pointer;">✏ ändern</span>
+        </div>
+        <div class="check-item ok" style="display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;">
+          <span style="font-size:18px;">✅</span>
+          <div><p style="font-weight:700;font-size:13px;margin:0;">Reserve 203 € / Monat</p><p style="font-size:12px;color:#64748b;margin:2px 0 0;">Knapp aber positiv. Empfehlung: min. 200–300 €.</p></div>
+          <span style="color:#64748b;font-size:12px;cursor:pointer;">✏ ändern</span>
+        </div>
+      </div>
+      <!-- Start button with momentum -->
+      <div style="text-align:center;padding:20px;background:linear-gradient(135deg,rgba(13,148,136,0.06),rgba(13,148,136,0.12));border:1px solid rgba(13,148,136,0.2);border-radius:18px;">
+        <p style="font-size:13px;color:#94a3b8;margin:0 0 12px;">Die KI-Analyse dauert ca. 15 Sekunden und ist kostenlos.</p>
+        <button class="btn-primary" style="font-size:16px;padding:14px 32px;border-radius:14px;width:100%;justify-content:center;">
+          🚀 Kostenlose Analyse starten
+        </button>
+        <p style="font-size:11px;color:#475569;margin:10px 0 0;">Keine Anmeldung nötig · Ergebnis wird lokal gespeichert</p>
+      </div>
+    </div>
+    <p class="annotation" style="margin-top:12px;">✅ Verbesserungen: Bewertungs-Score (0–100) auf einen Blick · Jeder Check mit Ampel-Farbe · Direktlink "ändern" springt zum richtigen Schritt zurück · Analyse-Button mit mehr Gewicht und Kontext</p>
+  </div>
+</section>
+
+<hr class="section-divider" />
+
+<!-- ===== SECTION 7: MOBILE STICKY NAV ===== -->
+<section style="padding: 0 24px 60px; max-width: 900px; margin: 0 auto;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <span style="background:#0D9488;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;">7</span>
+    <h2 style="font-size:20px;font-weight:900;margin:0;">Sticky CTA-Bar — Bottom Navigation</h2>
+    <span class="improvement-tag">Verbesserung</span>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:20px;">
+    <button onclick="showTab('cta','current')" style="padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;border:2px solid;cursor:pointer;" class="tab-inactive" id="tab-cta-current">Aktuell</button>
+    <button onclick="showTab('cta','improved')" style="padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;border:2px solid;cursor:pointer;" class="tab-active" id="tab-cta-improved">✨ Verbessert</button>
+  </div>
+
+  <!-- CURRENT -->
+  <div id="panel-cta-current" style="display:none;">
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;max-width:400px;">
+      <button style="background:transparent;border:1px solid #334155;border-radius:10px;padding:10px 16px;color:#94a3b8;font-weight:700;font-size:13px;cursor:pointer;">← Zurück</button>
+      <button style="background:#0D9488;border:none;border-radius:10px;padding:10px 16px;color:white;font-weight:700;font-size:13px;cursor:pointer;">Weiter →</button>
+    </div>
+    <p class="annotation" style="margin-top:12px;">⚠️ Problem: Kein Fortschritts-Kontext in der Bar. Nutzer auf Mobile wissen nicht in welchem Schritt sie sind ohne nach oben zu scrollen. Zurück-Button ist zu ähnlich wie Weiter-Button.</p>
+  </div>
+
+  <!-- IMPROVED -->
+  <div id="panel-cta-improved" style="display:block;">
+    <div style="background:rgba(15,23,42,0.97);border:1px solid #334155;border-radius:16px;padding:12px 16px;max-width:420px;backdrop-filter:blur(12px);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <!-- Mini step dots -->
+        <div style="display:flex;gap:5px;flex:1;">
+          <div style="width:20px;height:5px;border-radius:99px;background:#10b981;"></div>
+          <div style="width:20px;height:5px;border-radius:99px;background:#0D9488;"></div>
+          <div style="width:20px;height:5px;border-radius:99px;background:#334155;"></div>
+          <div style="width:20px;height:5px;border-radius:99px;background:#334155;"></div>
+          <div style="width:20px;height:5px;border-radius:99px;background:#334155;"></div>
+        </div>
+        <span style="font-size:11px;color:#64748b;font-weight:700;">Schritt 2 / 5</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <button style="background:transparent;border:1px solid #334155;border-radius:10px;padding:10px 14px;color:#94a3b8;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;">
+          ← <span style="display:none;">Zurück</span>
+        </button>
+        <div style="flex:1;text-align:center;">
+          <p style="font-size:11px;color:#64748b;margin:0;">Immobilie erfassen</p>
+        </div>
+        <button style="background:#0D9488;border:none;border-radius:10px;padding:10px 20px;color:white;font-weight:800;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;">
+          Weiter <span>→</span>
+        </button>
+      </div>
+    </div>
+    <p class="annotation" style="margin-top:12px;">✅ Verbesserungen: Mini-Fortschrittsbalken in der CTA-Bar · Name des aktuellen Schritts sichtbar · Zurück-Button kleiner (Ghost) damit Weiter mehr Gewicht hat</p>
+  </div>
+</section>
+
+<!-- ===== ZUSAMMENFASSUNG ===== -->
+<section style="padding: 0 24px 80px; max-width: 900px; margin: 0 auto;">
+  <div style="background:linear-gradient(135deg,rgba(13,148,136,0.08),rgba(13,148,136,0.04));border:1px solid rgba(13,148,136,0.2);border-radius:20px;padding:28px;">
+    <p class="section-label" style="margin-bottom:8px;">Alle Verbesserungen auf einen Blick</p>
+    <h2 style="font-size:22px;font-weight:900;margin:0 0 20px;">7 Verbesserungen für den Analyse-Wizard</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:12px;background:rgba(13,148,136,0.05);border-radius:12px;">
+        <span style="font-size:20px;">📍</span>
+        <div><p style="font-weight:700;font-size:13px;margin:0;">Schritt-Punkte mit Checkmarks</p><p style="font-size:12px;color:#64748b;margin:4px 0 0;">Erledigte Schritte sehen abgehakt aus. Aktiver Schritt pulsiert.</p></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:12px;background:rgba(13,148,136,0.05);border-radius:12px;">
+        <span style="font-size:20px;">🎯</span>
+        <div><p style="font-weight:700;font-size:13px;margin:0;">Zielauswahl mit Tags</p><p style="font-size:12px;color:#64748b;margin:4px 0 0;">Tags zeigen welche Kennzahlen bei welchem Ziel berechnet werden.</p></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:12px;background:rgba(13,148,136,0.05);border-radius:12px;">
+        <span style="font-size:20px;">💰</span>
+        <div><p style="font-weight:700;font-size:13px;margin:0;">Preis/m² + Markteinordnung</p><p style="font-size:12px;color:#64748b;margin:4px 0 0;">Live-Berechnung zeigt ob der Preis marktüblich ist.</p></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:12px;background:rgba(13,148,136,0.05);border-radius:12px;">
+        <span style="font-size:20px;">📊</span>
+        <div><p style="font-weight:700;font-size:13px;margin:0;">Tragbarkeits-Ampel</p><p style="font-size:12px;color:#64748b;margin:4px 0 0;">Grün/Gelb/Rot zeigt sofort ob Rate und Eigenkapital reichen.</p></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:12px;background:rgba(13,148,136,0.05);border-radius:12px;">
+        <span style="font-size:20px;">📉</span>
+        <div><p style="font-weight:700;font-size:13px;margin:0;">Tilgungsverlauf Visualisierung</p><p style="font-size:12px;color:#64748b;margin:4px 0 0;">Balken zeigt Restschuld über 10/20/30 Jahre. Warnung bei Zinsbindungsende.</p></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:12px;background:rgba(13,148,136,0.05);border-radius:12px;">
+        <span style="font-size:20px;">🚦</span>
+        <div><p style="font-weight:700;font-size:13px;margin:0;">Bewertungs-Score auf Prüfen-Seite</p><p style="font-size:12px;color:#64748b;margin:4px 0 0;">Score 0–100 und Einzel-Checks mit direktem "Ändern"-Link.</p></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:12px;background:rgba(13,148,136,0.05);border-radius:12px;">
+        <span style="font-size:20px;">📱</span>
+        <div><p style="font-weight:700;font-size:13px;margin:0;">Mini-Progress in CTA-Bar</p><p style="font-size:12px;color:#64748b;margin:4px 0 0;">Fortschritt und Schrittname sichtbar ohne nach oben zu scrollen.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+function showTab(group, variant) {
+  document.getElementById('panel-' + group + '-current').style.display = variant === 'current' ? 'block' : 'none';
+  document.getElementById('panel-' + group + '-improved').style.display = variant === 'improved' ? 'block' : 'none';
+  document.getElementById('tab-' + group + '-current').className = variant === 'current' ? 'tab-active' : 'tab-inactive';
+  document.getElementById('tab-' + group + '-improved').className = variant === 'improved' ? 'tab-active' : 'tab-inactive';
+}
+</script>
+
+<style>
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+</style>
+</body>
+</html>

@@ -10,13 +10,19 @@ const supabaseOrigin = (() => {
   }
 })();
 
+// In development, Next.js webpack HMR requires 'unsafe-eval' for source maps.
+// Without it the react-refresh runtime fails and React never hydrates (clicks stop working).
+const scriptSrc = process.env.NODE_ENV === "development"
+  ? "'self' 'unsafe-inline' 'unsafe-eval'"
+  : "'self' 'unsafe-inline'";
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
   "object-src 'none'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src ${scriptSrc}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",

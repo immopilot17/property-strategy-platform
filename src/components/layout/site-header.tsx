@@ -9,15 +9,19 @@ import { FounderBadge } from "@/components/founder/founder-badge";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "./theme-toggle";
 
-const navigationBeforeAuth = [
+const guestNavigation = [
   { href: "/#so-funktionierts", label: "So funktioniert’s", accent: false },
+  { href: "/dashboard/zahlungen", label: "Tarife & Leistungen", accent: false },
+  { href: "/analyse", label: "Analyse starten", accent: true }
+] as const;
+
+const memberNavigation = [
   { href: "/dashboard", label: "Dashboard", accent: false },
   { href: "/analyse", label: "Analyse starten", accent: true },
   { href: "/dashboard/properties", label: "Meine Immobilien", accent: false },
-  { href: "/dashboard/konto", label: "Mein Konto", accent: false }
+  { href: "/dashboard/konto", label: "Mein Konto", accent: false },
+  { href: "/dashboard/zahlungen", label: "Tarife & Leistungen", accent: false }
 ] as const;
-
-const tariffLink = { href: "/dashboard/zahlungen", label: "Tarife & Leistungen" } as const;
 
 type AccountStatus = {
   signedIn: boolean;
@@ -29,6 +33,7 @@ type AccountStatus = {
 const navClass = "whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-ink dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white";
 const accentNavClass = "whitespace-nowrap rounded-xl bg-teal px-3.5 py-2.5 text-sm font-bold text-white transition hover:bg-teal-800 dark:bg-teal-500 dark:text-slate-950 dark:hover:bg-teal-400";
 const mobileNavClass = "rounded-xl px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800";
+const guestAccount: AccountStatus = { signedIn: false, tier: "free", role: "user", unlimited: false };
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -40,9 +45,16 @@ export function SiteHeader() {
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/payments/entitlements", { cache: "no-store", signal: controller.signal })
-      .then((response) => response.json())
-      .then((data: AccountStatus) => setAccount(data))
-      .catch(() => undefined);
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Entitlements returned ${response.status}`);
+        return response.json() as Promise<AccountStatus>;
+      })
+      .then((data) => setAccount(data))
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        console.error("site-header.entitlements.failed", error instanceof Error ? error.message : String(error));
+        setAccount(guestAccount);
+      });
     return () => controller.abort();
   }, [pathname]);
 
@@ -51,10 +63,14 @@ export function SiteHeader() {
     try {
       await createClient().auth.signOut();
       window.location.assign("/");
-    } catch {
+    } catch (error) {
+      console.error("site-header.signout.failed", error instanceof Error ? error.message : String(error));
       setSigningOut(false);
     }
   };
+
+  const navigation = account?.signedIn ? memberNavigation : guestNavigation;
+  const adminVisible = account?.role !== undefined && account.role !== "user";
 
   const authControl = account?.signedIn ? (
     <button type="button" onClick={signOut} disabled={signingOut} className={`${navClass} disabled:opacity-60`}>
@@ -69,7 +85,7 @@ export function SiteHeader() {
       <nav aria-label="Hauptnavigation" className="mx-auto flex min-h-[72px] max-w-[1680px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <Brand compact />
         <div className="hidden min-w-0 items-center gap-0.5 xl:flex">
-          {navigationBeforeAuth.map((item) => (
+          {navigation.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -80,10 +96,9 @@ export function SiteHeader() {
             </Link>
           ))}
           {authControl}
-          <Link href={tariffLink.href} aria-current={pathname === tariffLink.href ? "page" : undefined} className={navClass}>{tariffLink.label}</Link>
           <ThemeToggle />
           {account?.role === "founder" ? <FounderBadge isFounder /> : null}
-          {account?.role !== undefined && account.role !== "user" ? (
+          {adminVisible ? (
             <Link href="/admin" className="rounded-xl px-3 py-2.5 text-sm font-bold text-teal transition hover:bg-mint dark:text-teal-300 dark:hover:bg-teal-950">Admin</Link>
           ) : null}
         </div>
@@ -97,13 +112,12 @@ export function SiteHeader() {
       {open ? (
         <div id="mobile-navigation" className="border-t border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-950 xl:hidden">
           <div className="mx-auto grid max-w-xl gap-1">
-            {navigationBeforeAuth.map((item) => <Link key={item.href} href={item.href} className={item.accent ? `${mobileNavClass} bg-teal text-white hover:bg-teal-800 dark:text-slate-950` : mobileNavClass}>{item.label}</Link>)}
+            {navigation.map((item) => <Link key={item.href} href={item.href} className={item.accent ? `${mobileNavClass} bg-teal text-white hover:bg-teal-800 dark:text-slate-950` : mobileNavClass}>{item.label}</Link>)}
             {account?.signedIn ? (
               <button type="button" onClick={signOut} disabled={signingOut} className={`${mobileNavClass} text-left disabled:opacity-60`}>{signingOut ? "Abmeldung …" : "Abmelden"}</button>
             ) : <Link href="/login" className={mobileNavClass}>Anmelden</Link>}
-            <Link href={tariffLink.href} className={mobileNavClass}>{tariffLink.label}</Link>
             {account?.role === "founder" ? <div className="px-4 py-2"><FounderBadge isFounder /></div> : null}
-            {account?.role !== undefined && account.role !== "user" ? <Link href="/admin" className={`${mobileNavClass} text-teal dark:text-teal-300`}>Admin-Konsole</Link> : null}
+            {adminVisible ? <Link href="/admin" className={`${mobileNavClass} text-teal dark:text-teal-300`}>Admin-Konsole</Link> : null}
           </div>
         </div>
       ) : null}

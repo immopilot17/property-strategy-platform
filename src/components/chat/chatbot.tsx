@@ -73,7 +73,7 @@ export function Chatbot() {
   }
 
   return (
-    <div className={`fixed inset-x-3 z-[60] pointer-events-none print:hidden sm:inset-x-auto sm:right-5 ${isAnalysisPage ? "bottom-24 sm:bottom-5" : "bottom-3 sm:bottom-5"}`}>
+    <div className={`fixed inset-x-3 z-[60] pointer-events-none print:hidden sm:inset-x-auto sm:right-5 ${isAnalysisPage ? "bottom-24" : "bottom-3 sm:bottom-5"}`}>
       {open ? (
         <section role="dialog" aria-modal="true" aria-labelledby="assistant-title" className={`pointer-events-auto mb-3 flex w-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:w-[400px] ${isAnalysisPage ? "h-[min(540px,calc(100svh-10rem))]" : "h-[min(620px,calc(100svh-6rem))]"}`}>
           <header className="flex items-center justify-between gap-4 bg-ink px-5 py-4 text-white">
